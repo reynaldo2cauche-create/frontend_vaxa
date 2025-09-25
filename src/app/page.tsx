@@ -80,9 +80,17 @@ export default function Home() {
       return
     }
 
-    try {
-      // Simular envío del formulario
-      await new Promise(resolve => setTimeout(resolve, 1000))
+    
+  try {
+    const response = await fetch("api/send-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(formData),
+})
+
+    const result = await response.json()
+
+    if (result.success) {
       setFormStatus({ type: 'success', message: '¡Gracias! Hemos recibido tu solicitud.' })
       setFormData({
         nombre: '',
@@ -93,12 +101,16 @@ export default function Home() {
         mensaje: 'Estoy interesado en Vaxa y deseo más información.',
         acepta: false
       })
-    } catch (error) {
+    } else {
       setFormStatus({ type: 'error', message: 'Ocurrió un error al enviar. Inténtalo nuevamente.' })
-    } finally {
-      setLoading(false)
     }
-  }
+  } catch (error) {
+    console.error(error)
+    setFormStatus({ type: 'error', message: 'Ocurrió un error al enviar. Inténtalo nuevamente.' })
+} finally {
+  setLoading(false)
+}
+}
 
   const features = [
     {
@@ -155,7 +167,7 @@ export default function Home() {
         <Toolbar>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexGrow: 1 }}>
             <Image 
-              src="/images/vaxa-logo.png" 
+              src="/images/imagotipo vaxa.png" 
               alt="Vaxa Logo" 
               width={100} 
               height={75}
@@ -385,7 +397,7 @@ export default function Home() {
                     fullWidth
                     variant="outlined"
                     startIcon={<WhatsApp />}
-                    href="https://wa.me/51900000000?text=Hola%20Vaxa%2C%20quisiera%20m%C3%A1s%20informaci%C3%B3n"
+                    href="https://wa.me/51974280156?text=Hola%20Vaxa%2C%20quisiera%20m%C3%A1s%20informaci%C3%B3n"
                     target="_blank"
                     rel="noopener"
                   >
@@ -566,6 +578,5 @@ Body (AES-256-GCM): {...}`}</pre>
         </Container>
       </Box>
     </Box>
-  )
+    )
 }
-
