@@ -28,7 +28,8 @@ import {
   List,
   ListItem,
   ListItemText,
-  Divider
+  Divider,
+  FormHelperText
 } from '@mui/material'
 import {
   Security,
@@ -46,6 +47,8 @@ import {
 } from '@mui/icons-material'
 import Link from 'next/link'
 import Image from 'next/image'
+import emailjs from '@emailjs/browser'
+import { format } from 'path'
 
 export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -60,6 +63,8 @@ export default function Home() {
   })
   const [formStatus, setFormStatus] = useState({ type: '', message: '' })
   const [loading, setLoading] = useState(false)
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
 
   const handleInputChange = (e: any) => {
     const { name, value, checked } = e.target
@@ -69,48 +74,98 @@ export default function Home() {
     }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setFormStatus({ type: '', message: '' })
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!validateForm()) {
+    return; // si hay errores, no envía
+  }
+    setLoading(true);
+    setFormStatus({ type: '', message: '' });
 
-    if (!formData.nombre || !formData.email || !formData.acepta) {
-      setFormStatus({ type: 'error', message: 'Completa tu nombre, correo y acepta la política.' })
-      setLoading(false)
-      return
-    }
+    try {
+      // Configuración de EmailJS con tu correo de hosting
+      const serviceId = 'service_86mzzho';      // Service conectado a tu SMTP
+      const templateId = 'template_g3xnt9n';    // Template creado
+      const publicKey = 'yZ3hxwjnd6qbT5XBf';      // Public key de tu cuenta
 
-    
-  try {
-    const response = await fetch("api/send-email", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(formData),
-})
+      // Parámetros que se enviarán al template de EmailJS
+      const templateParams = {
+        from_name: formData.nombre,
+        from_email: formData.email,
+        celular: formData.celular || 'No proporcionado',
+        centro: formData.centro || 'No proporcionado',
+        tamano: formData.tamano || 'No seleccionado',
+        message: formData.mensaje || 'Sin mensaje adicional',
+        reply_to: formData.email,
+      };
 
-    const result = await response.json()
+      // Enviar email directamente desde el cliente
+      const response = await emailjs.send(
+        serviceId,
+        templateId,
+        templateParams,
+        publicKey
+      );
 
-    if (result.success) {
-      setFormStatus({ type: 'success', message: '¡Gracias! Hemos recibido tu solicitud.' })
+      console.log('Email enviado:', response);
+
+      setFormStatus({
+        type: 'success',
+        message: '¡Mensaje enviado con éxito! Te responderemos en menos de 24 horas.'
+      });
+
+      // Limpiar formulario
       setFormData({
         nombre: '',
         email: '',
         celular: '',
         centro: '',
         tamano: '',
-        mensaje: 'Estoy interesado en Vaxa y deseo más información.',
+        mensaje: '',
         acepta: false
-      })
-    } else {
-      setFormStatus({ type: 'error', message: 'Ocurrió un error al enviar. Inténtalo nuevamente.' })
+      });
+
+    } catch (error) {
+      console.error('Error al enviar:', error);
+      setFormStatus({
+        type: 'error',
+        message: 'Hubo un error al enviar el mensaje. Por favor, intenta nuevamente.'
+      });
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.error(error)
-    setFormStatus({ type: 'error', message: 'Ocurrió un error al enviar. Inténtalo nuevamente.' })
-} finally {
-  setLoading(false)
-}
-}
+  };
+  const validateForm=()=>{
+    let tempErrors: { [key: string]: string } = {};
+    if (!formData.nombre.trim()) {
+    tempErrors.nombre = "El nombre es obligatorio.";
+    }
+    if (!formData.email.trim()) {
+    tempErrors.email = "El correo es obligatorio.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      tempErrors.email = "El correo no es válido.";
+    }
+    if (!formData.celular.trim()) {
+    tempErrors.celular = "El número de teléfono es obligatorio.";
+    } else if (!/^\d{9}$/.test(formData.celular)) {
+      tempErrors.celular = "El número de teléfono debe tener 9 dígitos.";
+    }
+    if(!formData.centro.trim()){
+      tempErrors.centro = "El nombre del centro es obligatorio.";
+    }
+    if(!formData.tamano.trim()){
+      tempErrors.tamano = "El tamaño del centro es obligatorio.";
+    }
+    if(!formData.mensaje.trim()){
+      tempErrors.mensaje = "El mensaje es obligatorio.";
+    }
+    if (!formData.acepta) {
+      tempErrors.acepta = "Debes aceptar la Política de Privacidad.";
+    }
+    setErrors(tempErrors);
+    return Object.keys(tempErrors).length === 0; // true si no hay errores
+
+  };
 
   const features = [
     {
@@ -283,7 +338,9 @@ export default function Home() {
                         value={formData.nombre}
                         onChange={handleInputChange}
                         placeholder="Ej. Ana Pérez"
-                        required
+                        error={Boolean(errors.nombre)}
+                        helperText={errors.nombre}
+                      
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -295,7 +352,9 @@ export default function Home() {
                         value={formData.email}
                         onChange={handleInputChange}
                         placeholder="nombre@empresa.com"
-                        required
+                        error={Boolean(errors.email)}
+                        helperText={errors.email}
+                       
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -306,6 +365,8 @@ export default function Home() {
                         value={formData.celular}
                         onChange={handleInputChange}
                         placeholder="+51 9xx xxx xxx"
+                        error={Boolean(errors.celular)}
+                        helperText={errors.celular}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -316,6 +377,8 @@ export default function Home() {
                         value={formData.centro}
                         onChange={handleInputChange}
                         placeholder="Nombre de tu institución"
+                        error={Boolean(errors.centro)}
+                        helperText={errors.centro}
                       />
                     </Grid>
                     <Grid item xs={12} sm={6}>
@@ -332,6 +395,9 @@ export default function Home() {
                           <MenuItem value="4-10">4–10 terapeutas</MenuItem>
                           <MenuItem value="10+">Más de 10 terapeutas</MenuItem>
                         </Select>
+                        {errors.tamano && (
+                          <FormHelperText>{errors.tamano}</FormHelperText>
+                        )}
                       </FormControl>
                     </Grid>
                     <Grid item xs={12}>
@@ -343,6 +409,8 @@ export default function Home() {
                         name="mensaje"
                         value={formData.mensaje}
                         onChange={handleInputChange}
+                        error={Boolean(errors.mensaje)}
+                        helperText={errors.mensaje}
                       />
                     </Grid>
                   </Grid>
@@ -353,7 +421,8 @@ export default function Home() {
                         name="acepta"
                         checked={formData.acepta}
                         onChange={handleInputChange}
-                        required
+
+                        
                       />
                     }
                     label={
@@ -546,18 +615,18 @@ Body (AES-256-GCM): {...}`}</pre>
         <Container maxWidth="lg">
           <Grid container spacing={4} alignItems="center">
             <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                <Image 
-                  src="/images/vaxa-logo.png" 
-                  alt="Vaxa Logo" 
-                  width={220} 
-                  height={60}
-                  style={{ objectFit: 'contain' }}
-                />
-              </Box>
-              <Typography variant="body2" color="text.secondary">
+              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1 }}>
+              <Image 
+                src="/images/imagotipo vaxa.png" 
+                alt="Vaxa Logo" 
+                width={120} 
+                height={60}
+                style={{ objectFit: 'contain' }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 © {new Date().getFullYear()} Vaxa. Todos los derechos reservados.
               </Typography>
+            </Box>
             </Grid>
             <Grid item xs={12} md={6}>
               <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
