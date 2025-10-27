@@ -217,60 +217,7 @@ export default function Home() {
 
   return (
     <Box>
-      {/* Header */}
-      <AppBar position="sticky" sx={{ backgroundColor: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(10px)', color: 'text.primary', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-        <Toolbar>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexGrow: 1 }}>
-            <Image 
-              src="/images/imagotipo vaxa.png" 
-              alt="Vaxa Logo" 
-              width={100} 
-              height={75}
-              style={{ objectFit: 'contain' }}
-            />
-          </Box>
-          
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, gap: 3, alignItems: 'center' }}>
-            <Button color="inherit" href="#features">Características</Button>
-            <Button color="inherit" href="#seguridad">Seguridad</Button>
-            <Button color="inherit" href="#precios">Precios</Button>
-            <Button variant="outlined" href="#contacto">Solicitar información</Button>
-          </Box>
-          
-          <IconButton
-            color="inherit"
-            onClick={() => setMobileOpen(true)}
-            sx={{ display: { xs: 'block', md: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-        </Toolbar>
-      </AppBar>
-
-      {/* Mobile Drawer */}
-      <Drawer
-        anchor="right"
-        open={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-      >
-        <Box sx={{ width: 250, p: 2 }}>
-          <List>
-            <ListItem button component="a" href="#features">
-              <ListItemText primary="Características" />
-            </ListItem>
-            <ListItem button component="a" href="#seguridad">
-              <ListItemText primary="Seguridad" />
-            </ListItem>
-            <ListItem button component="a" href="#precios">
-              <ListItemText primary="Precios" />
-            </ListItem>
-            <Divider sx={{ my: 1 }} />
-            <ListItem button component="a" href="#contacto">
-              <ListItemText primary="Solicitar información" />
-            </ListItem>
-          </List>
-        </Box>
-      </Drawer>
+    
 
       {/* Hero Section */}
       <Box sx={{ py: 8, background: 'linear-gradient(#fff, #f9fafb)' }}>
@@ -610,42 +557,7 @@ Body (AES-256-GCM): {...}`}</pre>
         </Container>
       </Box>
 
-      {/* Footer */}
-      <Box sx={{ borderTop: '1px solid #e5e7eb', py: 4 }}>
-        <Container maxWidth="lg">
-          <Grid container spacing={4} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 1 }}>
-              <Image 
-                src="/images/imagotipo vaxa.png" 
-                alt="Vaxa Logo" 
-                width={120} 
-                height={60}
-                style={{ objectFit: 'contain' }}
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                © {new Date().getFullYear()} Vaxa. Todos los derechos reservados.
-              </Typography>
-            </Box>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Box sx={{ textAlign: { xs: 'left', md: 'right' } }}>
-                <Button variant="text" size="small" href="#politica" color="inherit">
-                  Política de Privacidad
-                </Button>
-                <Typography component="span" color="text.secondary" sx={{ mx: 1 }}>·</Typography>
-                <Button variant="text" size="small" href="#terminos" color="inherit">
-                  Términos y Condiciones
-                </Button>
-                <Typography component="span" color="text.secondary" sx={{ mx: 1 }}>·</Typography>
-                <Button variant="text" size="small" href="#contacto" color="inherit">
-                  Contacto
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
-        </Container>
-      </Box>
+    
     </Box>
     )
 }
