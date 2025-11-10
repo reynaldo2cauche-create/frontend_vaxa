@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run setup:campos:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)",
+      "Bash(nul)",
+      "Bash(cat:*)",
+      "Bash(dir \"C:\\Users\\Lucero\\Desktop\\frontend_vaxa\\src\\app\\api\\generar-certificados\" /B 2)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(npm install:*)",
+      "Bash(timeout:*)",
+      "Bash(mysql:*)",
+      "Bash(npx ts-node:*)",
+      "Bash(node scripts/migrate.mjs:*)",
+      "Bash(node scripts/fix-metadata.mjs:*)",
+      "Bash(node scripts/fix-participantes.mjs:*)",
+      "Bash(netstat:*)",
+      "Bash(node scripts/migrate-firmas.mjs:*)",
+      "Bash(node scripts/rollback-firmas.mjs:*)",
+      "Bash(node scripts/verificar-rollback.mjs:*)",
+      "Bash(node scripts/add-lote-fields.mjs:*)",
+      "Bash(node scripts/setup-firmas.mjs:*)",
+      "Bash(node scripts/fix-logos-index.mjs:*)",
+      "Bash(node scripts/gestionar-firmas.mjs:*)",
+      "Bash(node scripts/setup-firmas-ejemplo.mjs:*)",
+      "Bash(./kill-ports.bat)",
+      "Bash(node test-firmas.mjs:*)",
+      "Bash(node scripts/ejecutar-migracion-completa.mjs:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
