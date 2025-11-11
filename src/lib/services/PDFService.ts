@@ -180,7 +180,7 @@ export class PDFService {
       z-index: 1;
       width: 100%;
       height: 100%;
-      padding: 40px 80px 35px 80px;
+      padding: 35px 80px 30px 80px;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -221,15 +221,15 @@ export class PDFService {
       justify-content: center;
       align-items: center;
       text-align: center;
-      padding: 60px 100px 0 100px;
-      margin-top: 10px;
+      padding: 40px 100px 0 100px;
+      margin-top: -10px;
     }
 
     .titulo {
       font-size: 32px;
       font-weight: bold;
       color: #1a365d;
-      margin-bottom: 25px;
+      margin-bottom: 20px;
       text-transform: uppercase;
       letter-spacing: 1.5px;
     }
@@ -238,22 +238,22 @@ export class PDFService {
       font-size: 42px;
       font-weight: bold;
       color: #0f172a;
-      margin: 20px 0 25px 0;
+      margin: 15px 0 20px 0;
       font-family: 'Georgia', 'Times New Roman', serif;
       line-height: 1.2;
       max-width: 900px;
     }
 
     .cuerpo {
-      font-size: 18px;
+      font-size: 20px;
       color: #475569;
       line-height: 1.6;
       max-width: 880px;
-      margin: 20px 0 25px 0;
+      margin: 15px 0 20px 0;
     }
 
     .cuerpo.texto-largo {
-      font-size: 16px;
+      font-size: 18px;
       line-height: 1.5;
     }
 
@@ -261,7 +261,7 @@ export class PDFService {
       font-size: 22px;
       font-style: italic;
       color: #1e40af;
-      margin: 20px 0 0 0;
+      margin: 15px 0 0 0;
       font-family: 'Georgia', 'Times New Roman', serif;
       line-height: 1.3;
       max-width: 800px;
@@ -272,7 +272,7 @@ export class PDFService {
       justify-content: space-between;
       align-items: flex-end;
       padding: 0 50px;
-      margin-bottom: 15px;
+      margin-bottom: 10px;
     }
 
     .datos {
@@ -283,7 +283,7 @@ export class PDFService {
 
     .qr-container {
       position: absolute;
-      bottom: 45px;
+      bottom: 40px;
       right: 70px;
       text-align: center;
     }
@@ -304,7 +304,7 @@ export class PDFService {
 
     .footer-text {
       position: absolute;
-      bottom: 12px;
+      bottom: 10px;
       left: 0;
       right: 0;
       text-align: center;
@@ -314,7 +314,7 @@ export class PDFService {
 
     .firmas-container {
       position: absolute;
-      bottom: 85px;
+      bottom: 75px;
       left: 50%;
       transform: translateX(-50%);
       display: flex;
@@ -331,11 +331,11 @@ export class PDFService {
     }
 
     .firma-imagen {
-      width: 130px;
-      height: 40px;
+      width: 160px;
+      height: 60px;
       object-fit: contain;
       object-position: center bottom;
-      margin-bottom: -2px;
+      margin-bottom: -12px;
       display: block;
       margin-left: auto;
       margin-right: auto;

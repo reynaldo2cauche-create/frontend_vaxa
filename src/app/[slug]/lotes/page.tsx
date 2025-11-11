@@ -89,20 +89,21 @@ export default function LotesPage() {
         throw new Error('Error al generar ZIP');
       }
 
-      const data = await response.json();
+      // Obtener el blob directamente desde la respuesta
+      const blob = await response.blob();
 
-      if (data.success && data.data.downloadUrl) {
-        // Descargar el ZIP
-        const link = document.createElement('a');
-        link.href = data.data.downloadUrl;
-        link.download = `lote-${loteId}.zip`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+      // Crear URL del blob y descargar
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `certificados-lote-${loteId}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
 
-        // Actualizar el lote para indicar que ahora tiene ZIP
-        loadLotes();
-      }
+      // Actualizar el lote para indicar que ahora tiene ZIP
+      loadLotes();
     } catch (error) {
       console.error('Error al descargar ZIP:', error);
       alert('Error al descargar el archivo ZIP');

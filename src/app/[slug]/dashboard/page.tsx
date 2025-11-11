@@ -17,8 +17,8 @@ import {
   PenTool,
   Eye,
   CheckCircle2,
-  Search,
-  BarChart3
+  Package,
+  ChevronRight
 } from 'lucide-react';
 import DescargarPlantillaExcel from './DescargarPlantillaExcel';
 import PlantillaUpload from './plantillaUpload';
@@ -29,6 +29,7 @@ import CertificadoPreview from './CertificadoPreview';
 import * as XLSX from 'xlsx';
 import LogosUpload from './logosUpload';
 import type { Logo } from '@/lib/entities/Logo';
+import ModalExitoCertificados from '@/components/ModalExitoCertificado/route';
 
 // ✅ INTERFACE UNIFICADA para firmas
 interface Firma {
@@ -91,6 +92,7 @@ export default function DashboardPage() {
   const [resultadoGeneracion, setResultadoGeneracion] = useState<any>(null);
   const [descargandoZip, setDescargandoZip] = useState(false);
   const [logos, setLogos] = useState<Logo[]>([]);
+  const [mostrarModalExito, setMostrarModalExito] = useState(false);
 
   const [stats, setStats] = useState<DashboardStats>({
     total_certificados: 0,
@@ -264,8 +266,7 @@ export default function DashboardPage() {
       setResultadoGeneracion(resultadoFormateado);
       await loadDashboard();
 
-      alert(`¡Éxito! Se generaron ${resultadoFormateado.certificados_generados} certificados correctamente`);
-
+    setMostrarModalExito(true);
     } catch (error: any) {
       console.error('Error:', error);
       alert(`Error al generar certificados: ${error.message}`);
@@ -349,14 +350,28 @@ export default function DashboardPage() {
 
       {/* CONTENIDO PRINCIPAL */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Bienvenida */}
-        <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
-            Bienvenido, {usuario?.nombre}!
-          </h2>
-          <p className="text-gray-600">
-            Gestiona los certificados de <strong>{empresa.nombre}</strong> desde aquí
-          </p>
+        {/* Header con bienvenida y acciones rápidas */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">
+              Hola, {usuario?.nombre} 👋
+            </h2>
+            <p className="text-gray-600">
+              ¿Qué vamos a crear hoy?
+            </p>
+          </div>
+
+          <button
+            onClick={() => router.push(`/${slug}/lotes`)}
+            className="hidden md:flex items-center gap-2 px-6 py-3 text-white rounded-xl font-semibold shadow-lg transition-all transform hover:scale-105"
+            style={{
+              background: `linear-gradient(135deg, ${empresa.color_primario}, ${empresa.color_secundario})`
+            }}
+          >
+            <Package className="w-5 h-5" />
+            Ver Mis Lotes
+            <ChevronRight className="w-4 h-4" />
+          </button>
         </div>
 
         {/* ESTADÍSTICAS */}
@@ -421,74 +436,113 @@ export default function DashboardPage() {
 
         {/* STEPPER DE 6 PASOS */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
-          <h3 className="text-2xl font-bold text-gray-800 mb-2">
-            Genera Certificados en 6 Pasos
-          </h3>
-          <p className="text-gray-600 mb-6 text-sm">
-            Sigue este flujo para crear certificados profesionales masivos
-          </p>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-2xl font-bold text-gray-800 mb-2">
+                Crear Nuevo Lote de Certificados
+              </h3>
+              <p className="text-gray-600 text-sm">
+                Proceso guiado paso a paso para generar certificados profesionales
+              </p>
+            </div>
+            <div
+              className="hidden md:block px-4 py-2 rounded-lg border-2"
+              style={{
+                backgroundColor: `${empresa.color_primario}10`,
+                borderColor: `${empresa.color_primario}40`,
+                color: empresa.color_primario
+              }}
+            >
+              <p className="text-xs font-medium">Paso {pasoActual} de 6</p>
+            </div>
+          </div>
 
-          {/* INDICADORES DE PASOS */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-8">
-            <StepIndicator
-              numero={1}
-              titulo="Descargar Excel"
-              icono={<Download className="w-5 h-5" />}
-              activo={pasoActual === 1}
-              completado={plantillaExcelDescargada}
-              onClick={() => setPasoActual(1)}
-              habilitado={true}
-            />
+          {/* INDICADORES DE PASOS - Diseño Mejorado */}
+          <div className="relative mb-8">
+            {/* Línea de progreso */}
+            <div className="hidden lg:block absolute top-8 left-0 right-0 h-1 bg-gray-200 rounded-full">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${((pasoActual - 1) / 5) * 100}%`,
+                  background: `linear-gradient(90deg, ${empresa.color_primario}, ${empresa.color_secundario})`
+                }}
+              />
+            </div>
 
-            <StepIndicator
-              numero={2}
-              titulo="Subir Plantilla"
-              icono={<ImageIcon className="w-5 h-5" />}
-              activo={pasoActual === 2}
-              completado={plantillaImagenSubida}
-              onClick={() => puedeAvanzarA(2) && setPasoActual(2)}
-              habilitado={puedeAvanzarA(2)}
-            />
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 relative">
+              <StepIndicator
+                numero={1}
+                titulo="Excel"
+                icono={<Download className="w-5 h-5" />}
+                activo={pasoActual === 1}
+                completado={plantillaExcelDescargada}
+                onClick={() => setPasoActual(1)}
+                habilitado={true}
+                colorPrimario={empresa.color_primario}
+                colorSecundario={empresa.color_secundario}
+              />
 
-            <StepIndicator
-              numero={3}
-              titulo="Subir Excel"
-              icono={<FileSpreadsheet className="w-5 h-5" />}
-              activo={pasoActual === 3}
-              completado={excelSubido}
-              onClick={() => puedeAvanzarA(3) && setPasoActual(3)}
-              habilitado={puedeAvanzarA(3)}
-            />
+              <StepIndicator
+                numero={2}
+                titulo="Plantilla"
+                icono={<ImageIcon className="w-5 h-5" />}
+                activo={pasoActual === 2}
+                completado={plantillaImagenSubida}
+                onClick={() => puedeAvanzarA(2) && setPasoActual(2)}
+                habilitado={puedeAvanzarA(2)}
+                colorPrimario={empresa.color_primario}
+                colorSecundario={empresa.color_secundario}
+              />
 
-            <StepIndicator
-              numero={4}
-              titulo="Texto Estático"
-              icono={<Type className="w-5 h-5" />}
-              activo={pasoActual === 4}
-              completado={textoConfigurado}
-              onClick={() => puedeAvanzarA(4) && setPasoActual(4)}
-              habilitado={puedeAvanzarA(4)}
-            />
+              <StepIndicator
+                numero={3}
+                titulo="Datos"
+                icono={<FileSpreadsheet className="w-5 h-5" />}
+                activo={pasoActual === 3}
+                completado={excelSubido}
+                onClick={() => puedeAvanzarA(3) && setPasoActual(3)}
+                habilitado={puedeAvanzarA(3)}
+                colorPrimario={empresa.color_primario}
+                colorSecundario={empresa.color_secundario}
+              />
 
-            <StepIndicator
-              numero={5}
-              titulo="Seleccionar Firmas"
-              icono={<PenTool className="w-5 h-5" />}
-              activo={pasoActual === 5}
-              completado={firmasSeleccionadas}
-              onClick={() => puedeAvanzarA(5) && setPasoActual(5)}
-              habilitado={puedeAvanzarA(5)}
-            />
+              <StepIndicator
+                numero={4}
+                titulo="Texto"
+                icono={<Type className="w-5 h-5" />}
+                activo={pasoActual === 4}
+                completado={textoConfigurado}
+                onClick={() => puedeAvanzarA(4) && setPasoActual(4)}
+                habilitado={puedeAvanzarA(4)}
+                colorPrimario={empresa.color_primario}
+                colorSecundario={empresa.color_secundario}
+              />
 
-            <StepIndicator
-              numero={6}
-              titulo="Vista Previa"
-              icono={<Eye className="w-5 h-5" />}
-              activo={pasoActual === 6}
-              completado={false}
-              onClick={() => puedeAvanzarA(6) && setPasoActual(6)}
-              habilitado={puedeAvanzarA(6)}
-            />
+              <StepIndicator
+                numero={5}
+                titulo="Firmas"
+                icono={<PenTool className="w-5 h-5" />}
+                activo={pasoActual === 5}
+                completado={firmasSeleccionadas}
+                onClick={() => puedeAvanzarA(5) && setPasoActual(5)}
+                habilitado={puedeAvanzarA(5)}
+                colorPrimario={empresa.color_primario}
+                colorSecundario={empresa.color_secundario}
+              />
+
+              <StepIndicator
+                numero={6}
+                titulo="Previsualizar"
+                icono={<Eye className="w-5 h-5" />}
+                activo={pasoActual === 6}
+                completado={false}
+                onClick={() => puedeAvanzarA(6) && setPasoActual(6)}
+                habilitado={puedeAvanzarA(6)}
+                colorPrimario={empresa.color_primario}
+                colorSecundario={empresa.color_secundario}
+              />
+            </div>
           </div>
 
           {/* CONTENIDO DEL PASO ACTUAL */}
@@ -554,10 +608,16 @@ export default function DashboardPage() {
                       setPlantillaExcelDescargada(true);
                       setPasoActual(2);
                     }}
-                    className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex items-center gap-2 px-8 py-3 text-white rounded-xl font-semibold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none transform hover:scale-105"
+                    style={{
+                      background: !tipoDocumento || !curso
+                        ? '#9ca3af'
+                        : `linear-gradient(135deg, ${empresa.color_primario}, ${empresa.color_secundario})`
+                    }}
                     disabled={!tipoDocumento || !curso}
                   >
-                    Continuar →
+                    Siguiente Paso
+                    <ChevronRight className="w-5 h-5" />
                   </button>
                 </div>
               </div>
@@ -626,21 +686,25 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <div className="flex justify-between mt-6">
+                <div className="flex justify-between items-center mt-6">
                   <button
                     onClick={() => setPasoActual(1)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 font-medium transition-all"
                   >
-                    ← Volver
+                    <ChevronRight className="w-5 h-5 rotate-180" />
+                    Atrás
                   </button>
-                  
+
                   {plantillaImagenSubida && (
                     <button
                       onClick={() => setPasoActual(3)}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium shadow-sm transition-all flex items-center gap-2"
+                      className="flex items-center gap-2 px-8 py-3 text-white rounded-xl font-semibold shadow-lg transition-all transform hover:scale-105"
+                      style={{
+                        background: `linear-gradient(135deg, ${empresa.color_primario}, ${empresa.color_secundario})`
+                      }}
                     >
-                      Continuar al Paso 3
-                      <span className="text-lg">→</span>
+                      Siguiente Paso
+                      <ChevronRight className="w-5 h-5" />
                     </button>
                   )}
                 </div>
@@ -662,19 +726,24 @@ export default function DashboardPage() {
                     }
                   }}
                 />
-                <div className="flex justify-between mt-6">
+                <div className="flex justify-between items-center mt-6">
                   <button
                     onClick={() => setPasoActual(2)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 font-medium transition-all"
                   >
-                    ← Volver
+                    <ChevronRight className="w-5 h-5 rotate-180" />
+                    Atrás
                   </button>
                   {excelSubido && excelValido && (
                     <button
                       onClick={() => setPasoActual(4)}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium shadow-sm transition-all"
+                      className="flex items-center gap-2 px-8 py-3 text-white rounded-xl font-semibold shadow-lg transition-all transform hover:scale-105"
+                      style={{
+                        background: `linear-gradient(135deg, ${empresa.color_primario}, ${empresa.color_secundario})`
+                      }}
                     >
-                      Continuar al Paso 4 →
+                      Siguiente Paso
+                      <ChevronRight className="w-5 h-5" />
                     </button>
                   )}
                 </div>
@@ -690,19 +759,24 @@ export default function DashboardPage() {
                   }}
                   textoInicial={textoEstatico}
                 />
-                <div className="flex justify-between mt-6">
+                <div className="flex justify-between items-center mt-6">
                   <button
                     onClick={() => setPasoActual(3)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 font-medium transition-all"
                   >
-                    ← Volver
+                    <ChevronRight className="w-5 h-5 rotate-180" />
+                    Atrás
                   </button>
                   {textoConfigurado && (
                     <button
                       onClick={() => setPasoActual(5)}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium shadow-sm transition-all"
+                      className="flex items-center gap-2 px-8 py-3 text-white rounded-xl font-semibold shadow-lg transition-all transform hover:scale-105"
+                      style={{
+                        background: `linear-gradient(135deg, ${empresa.color_primario}, ${empresa.color_secundario})`
+                      }}
                     >
-                      Continuar al Paso 5 →
+                      Siguiente Paso
+                      <ChevronRight className="w-5 h-5" />
                     </button>
                   )}
                 </div>
@@ -720,19 +794,24 @@ export default function DashboardPage() {
                   }}
                   firmasInicial={firmas}
                 />
-                <div className="flex justify-between mt-6">
+                <div className="flex justify-between items-center mt-6">
                   <button
                     onClick={() => setPasoActual(4)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 font-medium transition-all"
                   >
-                    ← Volver
+                    <ChevronRight className="w-5 h-5 rotate-180" />
+                    Atrás
                   </button>
                   {firmasSeleccionadas && (
                     <button
                       onClick={() => setPasoActual(6)}
-                      className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 font-medium shadow-sm transition-all"
+                      className="flex items-center gap-2 px-8 py-3 text-white rounded-xl font-semibold shadow-lg transition-all transform hover:scale-105"
+                      style={{
+                        background: `linear-gradient(135deg, ${empresa.color_primario}, ${empresa.color_secundario})`
+                      }}
                     >
-                      Continuar al Paso 6 →
+                      Vista Previa Final
+                      <Eye className="w-5 h-5" />
                     </button>
                   )}
                 </div>
@@ -762,7 +841,7 @@ export default function DashboardPage() {
                           </div>
                           <div>
                             <span className="text-gray-600">Curso:</span>
-                            <p className="font-bold text-gray-800">{datosExcel[0]['Nombre del Curso']}</p>
+                            <p className="font-bold text-gray-800">{curso}</p>
                           </div>
                           <div>
                             <span className="text-gray-600">Fecha:</span>
@@ -910,9 +989,10 @@ export default function DashboardPage() {
                 <div className="flex justify-start mt-6">
                   <button
                     onClick={() => setPasoActual(5)}
-                    className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="flex items-center gap-2 px-6 py-3 text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 font-medium transition-all"
                   >
-                    ← Volver al Paso 5
+                    <ChevronRight className="w-5 h-5 rotate-180" />
+                    Atrás
                   </button>
                 </div>
               </div>
@@ -920,55 +1000,26 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ACCIONES RÁPIDAS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <button className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all text-left group">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
-                <Search className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-800 mb-1">Buscar</h4>
-                <p className="text-sm text-gray-600">Buscar certificados</p>
-              </div>
-            </div>
-          </button>
-
-          <button className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all text-left group">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center text-purple-600 group-hover:scale-110 transition-transform">
-                <Download className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-800 mb-1">Descargar</h4>
-                <p className="text-sm text-gray-600">Exportar listado</p>
-              </div>
-            </div>
-          </button>
-
-          <button className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all text-left group">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600 group-hover:scale-110 transition-transform">
-                <BarChart3 className="w-6 h-6" />
-              </div>
-              <div>
-                <h4 className="font-semibold text-gray-800 mb-1">Reportes</h4>
-                <p className="text-sm text-gray-600">Ver estadísticas</p>
-              </div>
-            </div>
-          </button>
-        </div>
-
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500">
           <p>Powered by <strong>VAXA</strong> - Sistema de Certificados con Validación</p>
         </div>
       </main>
+          <ModalExitoCertificados
+      isOpen={mostrarModalExito}
+      onClose={() => setMostrarModalExito(false)}
+      totalGenerados={resultadoGeneracion?.certificados_generados || 0}
+      onDescargarZip={
+        resultadoGeneracion?.lote_id 
+          ? () => descargarZip(resultadoGeneracion.lote_id)
+          : undefined
+      }
+    />
     </div>
   );
 }
 
-// ✅ Componente auxiliar para los indicadores de paso
+// ✅ Componente auxiliar para los indicadores de paso - Diseño mejorado
 function StepIndicator({
   numero,
   titulo,
@@ -976,7 +1027,9 @@ function StepIndicator({
   activo,
   completado,
   onClick,
-  habilitado
+  habilitado,
+  colorPrimario,
+  colorSecundario
 }: {
   numero: number;
   titulo: string;
@@ -985,40 +1038,70 @@ function StepIndicator({
   completado: boolean;
   onClick: () => void;
   habilitado: boolean;
+  colorPrimario: string;
+  colorSecundario: string;
 }) {
   return (
     <button
       onClick={onClick}
       disabled={!habilitado}
-      className={`border-2 rounded-xl p-3 transition-all ${
+      className={`relative rounded-xl p-4 transition-all duration-300 ${
         activo
-          ? 'border-blue-500 bg-blue-50 shadow-lg'
+          ? 'text-white shadow-xl scale-105 transform'
           : completado
-            ? 'border-green-500 bg-green-50'
+            ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-500 text-green-700'
             : habilitado
-              ? 'border-gray-200 hover:border-gray-300'
-              : 'border-gray-200 opacity-50 cursor-not-allowed'
+              ? 'bg-white border-2 border-gray-200 hover:shadow-md'
+              : 'bg-gray-50 border-2 border-gray-200 opacity-40 cursor-not-allowed'
       }`}
+      style={
+        activo
+          ? { background: `linear-gradient(135deg, ${colorPrimario}, ${colorSecundario})` }
+          : habilitado && !completado
+            ? { borderColor: 'rgb(229, 231, 235)' }
+            : undefined
+      }
+      onMouseEnter={(e) => {
+        if (habilitado && !activo && !completado) {
+          e.currentTarget.style.borderColor = colorPrimario;
+        }
+      }}
+      onMouseLeave={(e) => {
+        if (habilitado && !activo && !completado) {
+          e.currentTarget.style.borderColor = 'rgb(229, 231, 235)';
+        }
+      }}
     >
       <div className="flex flex-col items-center gap-2">
         <div
-          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+          className={`w-12 h-12 rounded-full flex items-center justify-center font-bold transition-all ${
             completado
-              ? 'bg-green-500 text-white'
+              ? 'bg-green-500 text-white shadow-md'
               : activo
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 text-gray-500'
+                ? 'bg-white/20 backdrop-blur-sm text-white'
+                : habilitado
+                  ? 'bg-gray-100 text-gray-600'
+                  : 'bg-gray-200 text-gray-400'
           }`}
         >
-          {completado ? <CheckCircle2 className="w-5 h-5" /> : icono}
+          {completado ? <CheckCircle2 className="w-6 h-6" /> : icono}
         </div>
-        <p
-          className={`text-xs font-semibold text-center ${
-            activo ? 'text-blue-600' : completado ? 'text-green-600' : 'text-gray-500'
-          }`}
-        >
-          {titulo}
-        </p>
+        <div className="text-center">
+          <p
+            className={`text-xs font-bold mb-0.5 ${
+              activo ? 'text-white' : completado ? 'text-green-700' : habilitado ? 'text-gray-700' : 'text-gray-400'
+            }`}
+          >
+            Paso {numero}
+          </p>
+          <p
+            className={`text-xs font-medium ${
+              activo ? 'text-white/90' : completado ? 'text-green-600' : habilitado ? 'text-gray-600' : 'text-gray-400'
+            }`}
+          >
+            {titulo}
+          </p>
+        </div>
       </div>
     </button>
   );

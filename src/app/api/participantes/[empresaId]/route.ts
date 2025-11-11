@@ -62,3 +62,68 @@ export async function GET(
     );
   }
 }
+// PUT - Actualizar un participante
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: { empresaId: string } }
+) {
+  try {
+    const body = await request.json();
+    const { participante_id, termino, nombres, apellidos, correo_electronico } = body;
+
+    if (!participante_id) {
+      return NextResponse.json(
+        { error: 'participante_id es requerido' },
+        { status: 400 }
+      );
+    }
+
+    const dataSource = await getDataSource();
+    const partRepo = dataSource.getRepository(Participante);
+
+    const participante = await partRepo.findOne({
+      where: { id: participante_id }
+    });
+
+    if (!participante) {
+      return NextResponse.json(
+        { error: 'Participante no encontrado' },
+        { status: 404 }
+      );
+    }
+
+    // Actualizar campos
+    if (termino !== undefined) {
+      participante.termino = termino || null;
+    }
+    if (nombres !== undefined) {
+      participante.nombres = nombres;
+    }
+    if (apellidos !== undefined) {
+      participante.apellidos = apellidos;
+    }
+    if (correo_electronico !== undefined) {
+      participante.correo_electronico = correo_electronico || null;
+    }
+
+    await partRepo.save(participante);
+
+    return NextResponse.json({
+      success: true,
+      participante: {
+        id: participante.id,
+        termino: participante.termino,
+        nombres: participante.nombres,
+        apellidos: participante.apellidos,
+        correo_electronico: participante.correo_electronico
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error al actualizar participante:', error);
+    return NextResponse.json(
+      { error: 'Error al actualizar participante' },
+      { status: 500 }
+    );
+  }
+}

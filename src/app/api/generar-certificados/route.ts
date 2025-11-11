@@ -139,6 +139,7 @@ export async function POST(req: NextRequest) {
         ...filaProcesada,
         'nombre_completo': nombreCompleto,  // Agregamos el nombre completo
         'curso': curso || filaProcesada['curso'],  // Curso del paso 1 tiene prioridad
+        'Nombre del Curso': curso || filaProcesada['Nombre del Curso'] || '',
         'tipo_documento': tipoDocumento || filaProcesada['tipo_documento']  // Tipo documento del paso 1
       };
     });

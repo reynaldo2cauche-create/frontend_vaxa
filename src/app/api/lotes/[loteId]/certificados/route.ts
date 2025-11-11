@@ -13,21 +13,17 @@ export async function GET(
   { params }: { params: { loteId: string } }
 ) {
   try {
-    // Verificar autenticación desde cookies
     const token = request.cookies.get('vaxa_token')?.value;
-
     if (!token) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 });
     }
 
     const decoded = verifyToken(token);
-
     if (!decoded) {
       return NextResponse.json({ error: 'Token inválido' }, { status: 401 });
     }
 
     const loteId = parseInt(params.loteId);
-
     if (isNaN(loteId)) {
       return NextResponse.json({ error: 'ID de lote inválido' }, { status: 400 });
     }
@@ -36,19 +32,18 @@ export async function GET(
     const certificadoRepo = dataSource.getRepository(Certificado);
     const datoCertificadoRepo = dataSource.getRepository(DatoCertificado);
 
-    // Parámetros de búsqueda y paginación
     const searchParams = request.nextUrl.searchParams;
     const busqueda = searchParams.get('busqueda') || '';
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const limit = parseInt(searchParams.get('limit') || '130');
 
-    // Construir query base
+    // Construir query base - CORREGIDO: usar empresa_id del lote, no del token
     const qb = certificadoRepo
       .createQueryBuilder('cert')
       .leftJoinAndSelect('cert.participante', 'participante')
       .leftJoinAndSelect('cert.curso', 'curso')
+      .leftJoinAndSelect('cert.lote', 'lote') // Agregar join con lote
       .where('cert.lote_id = :loteId', { loteId })
-      .andWhere('cert.empresa_id = :empresaId', { empresaId: decoded.empresa_id })
       .orderBy('cert.id', 'ASC')
       .take(limit)
       .skip((page - 1) * limit);
@@ -76,28 +71,26 @@ export async function GET(
           datosMap[dato.campo] = dato.valor;
         });
 
+        // Obtener término del participante si existe en datos adicionales
+        const termino = datosMap['termino'] || datosMap['tratamiento'] || '';
+
         return {
-          id: cert.id,
+          certificado_id: cert.id, // CAMBIADO: para coincidir con interfaz
           codigo: cert.codigo,
-          archivoUrl: cert.archivo_url,
-          fechaEmision: cert.fecha_emision,
+          participante_id: cert.participante?.id,
+          termino: termino,
+          nombres: cert.participante?.nombres || '',
+          apellidos: cert.participante?.apellidos || '',
+          nombre_completo: `${cert.participante?.nombres || ''} ${cert.participante?.apellidos || ''}`.trim(),
+          tipo_documento: cert.participante?.tipo_documento || '',
+          numero_documento: cert.participante?.numero_documento || '',
+          correo_electronico: cert.participante?.correo_electronico || null,
+          curso: cert.curso?.nombre || '',
+          horas: cert.curso?.horas_academicas || 0,
+          fecha_emision: cert.fecha_emision,
           estado: cert.estado,
-          participanteId: cert.participante_id,
-          cursoId: cert.curso_id,
-          participante: cert.participante ? {
-            id: cert.participante.id,
-            nombres: cert.participante.nombres,
-            apellidos: cert.participante.apellidos,
-            numeroDocumento: cert.participante.numero_documento,
-            correo: cert.participante.correo_electronico
-          } : null,
-          curso: cert.curso ? {
-            id: cert.curso.id,
-            nombre: cert.curso.nombre,
-            horasAcademicas: cert.curso.horas_academicas,
-            ponente: cert.curso.ponente
-          } : null,
-          datosAdicionales: datosMap
+          archivo_url: cert.archivo_url, // CAMBIADO: para coincidir con interfaz
+          datos_adicionales: datosMap
         };
       })
     );

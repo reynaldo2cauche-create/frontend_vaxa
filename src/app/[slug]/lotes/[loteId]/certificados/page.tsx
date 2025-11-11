@@ -1,589 +1,770 @@
+// src/app/[slug]/lotes/[loteId]/certificados/page.tsx
+
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  FileText,
+  Users,
   Search,
   Download,
   Edit2,
-  ArrowLeft,
-  Loader2,
-  X,
   Save,
-  Eye,
-  User,
-  BookOpen,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar
+  X,
+  Loader2,
+  CheckCircle2,
+  XCircle,
+  FileText,
+  Filter,
+  Eye
 } from 'lucide-react';
 
 interface Participante {
-  id: number;
+  certificado_id: number;
+  codigo: string;
+  participante_id: number;
+  termino: string | null;
   nombres: string;
   apellidos: string;
-  numeroDocumento: string;
-  correo: string | null;
-  telefono?: string | null;
-  ciudad?: string | null;
-  termino?: string | null;
-  tipoDocumento?: string;
+  nombre_completo: string;
+  tipo_documento: string;
+  numero_documento: string;
+  correo_electronico: string | null;
+  curso: string;
+  horas: number;
+  fecha_emision: string;
+  estado: 'activo' | 'revocado';
+  archivo_url: string;
+  datos_adicionales: Record<string, string>;
 }
 
-interface Curso {
+interface EditingParticipant {
   id: number;
-  nombre: string;
-  horasAcademicas: number | null;
-  ponente: string | null;
-  fechaInicio?: string | null;
-  fechaFin?: string | null;
-  modalidad?: string | null;
+  termino: string;
+  nombres: string;
+  apellidos: string;
+  correo_electronico: string;
 }
 
-interface Certificado {
-  id: number;
+// Componente para el modal de previsualización
+function PdfPreviewModal({ 
+  isOpen, 
+  onClose, 
+  certificadoId,
+  codigo 
+}: { 
+  isOpen: boolean;
+  onClose: () => void;
+  certificadoId: number;
   codigo: string;
-  archivoUrl: string;
-  fechaEmision: string;
-  estado: string;
-  participanteId: number | null;
-  cursoId: number | null;
-  participante: Participante | null;
-  curso: Curso | null;
-  datosAdicionales: Record<string, string>;
-}
-
-export default function CertificadosLotePage() {
-  const params = useParams();
-  const router = useRouter();
-  const slug = params.slug as string;
-  const loteId = parseInt(params.loteId as string);
-
+}) {
   const [loading, setLoading] = useState(true);
-  const [certificados, setCertificados] = useState<Certificado[]>([]);
-  const [certificadoSeleccionado, setCertificadoSeleccionado] = useState<Certificado | null>(null);
-  const [busqueda, setBusqueda] = useState('');
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [error, setError] = useState<string | null>(null);
+   
 
-  // Estados para edición
-  const [editando, setEditando] = useState(false);
-  const [guardando, setGuardando] = useState(false);
-  const [datosEdicion, setDatosEdicion] = useState<any>({});
+  const pdfUrl = `/api/certificados/${certificadoId}/preview`;
 
-  useEffect(() => {
-    loadCertificados();
-  }, [page, busqueda]);
-
-  const loadCertificados = async () => {
+  const handleDownload = async () => {
     try {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-
-      const url = `/api/lotes/${loteId}/certificados?page=${page}&limit=50${busqueda ? `&busqueda=${encodeURIComponent(busqueda)}` : ''}`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
+      const res = await fetch(`/api/certificados/${certificadoId}/descargar`, {
+        credentials: 'include'
       });
 
-      if (response.status === 401) {
-        router.push(`/login/${slug}`);
-        return;
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `certificado-${codigo}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
       }
-
-      if (!response.ok) {
-        throw new Error('Error al cargar certificados');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setCertificados(data.data.certificados);
-        setTotal(data.data.total);
-        setTotalPages(data.data.totalPages);
-      }
-    } catch (error) {
-      console.error('Error al cargar certificados:', error);
-      alert('Error al cargar los certificados');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const seleccionarCertificado = async (cert: Certificado) => {
-    try {
-      const token = localStorage.getItem('token');
-
-      // Obtener datos completos del certificado
-      const response = await fetch(`/api/certificados/${cert.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al obtener certificado');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        setCertificadoSeleccionado(data.data);
-        setDatosEdicion(data.data);
-        setEditando(false);
-      }
-    } catch (error) {
-      console.error('Error al obtener certificado:', error);
-      alert('Error al obtener los detalles del certificado');
-    }
-  };
-
-  const descargarCertificado = async (certificadoId: number) => {
-    try {
-      const token = localStorage.getItem('token');
-
-      const response = await fetch(`/api/certificados/${certificadoId}/descargar`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al descargar certificado');
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `certificado-${certificadoId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('Error al descargar:', error);
       alert('Error al descargar el certificado');
     }
   };
 
-  const guardarEdicion = async () => {
-    if (!certificadoSeleccionado) return;
+  if (!isOpen) return null;
 
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-800">
+            Vista previa - {codigo}
+          </h3>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="flex-1 relative">
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+              <span className="ml-2 text-gray-600">Cargando certificado...</span>
+            </div>
+          )}
+          
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white">
+              <div className="text-center">
+                <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                <p className="text-red-600 font-medium mb-2">Error al cargar el PDF</p>
+                <p className="text-gray-600 text-sm">{error}</p>
+                <button
+                  onClick={() => {
+                    setLoading(true);
+                    setError(null);
+                  }}
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Reintentar
+                </button>
+              </div>
+            </div>
+          )}
+
+          <iframe
+            src={pdfUrl}
+            className="w-full h-full border-0"
+            onLoad={() => setLoading(false)}
+            onError={() => {
+              setLoading(false);
+              setError('No se pudo cargar el documento PDF');
+            }}
+            title={`Certificado ${codigo}`}
+          />
+        </div>
+
+        <div className="flex items-center justify-between p-6 border-t border-gray-200 bg-gray-50">
+          <p className="text-sm text-gray-600">
+            Vista previa generada en tiempo real
+          </p>
+          <button
+            onClick={handleDownload}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            Descargar PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function ParticipantesLotePage() {
+  const params = useParams();
+  const router = useRouter();
+  const slug = params.slug as string;
+  const loteId = params.loteId as string;
+
+  const [participantes, setParticipantes] = useState<Participante[]>([]);
+  const [filteredParticipantes, setFilteredParticipantes] = useState<Participante[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [estadoFiltro, setEstadoFiltro] = useState<'todos' | 'activo' | 'revocado'>('todos');
+
+  // Edición
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editData, setEditData] = useState<EditingParticipant | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Ordenamiento
+  const [sortField, setSortField] = useState<'nombre' | 'documento' | 'fecha'>('nombre');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
+
+  // Previsualización PDF
+  const [previewPdf, setPreviewPdf] = useState<{
+    isOpen: boolean;
+    certificadoId: number;
+    codigo: string;
+  }>({
+    isOpen: false,
+    certificadoId: 0,
+    codigo: ''
+  });
+
+  useEffect(() => {
+    loadParticipantes();
+  }, [loteId]);
+
+  useEffect(() => {
+    filterAndSortParticipantes();
+    setCurrentPage(1); // Resetear a la primera página cuando cambian los filtros
+  }, [participantes, searchTerm, estadoFiltro, sortField, sortOrder]);
+
+  const loadParticipantes = async () => {
     try {
-      setGuardando(true);
-      const token = localStorage.getItem('token');
-
-      const body = {
-        participante: datosEdicion.participante ? {
-          nombres: datosEdicion.participante.nombres,
-          apellidos: datosEdicion.participante.apellidos,
-          numeroDocumento: datosEdicion.participante.numeroDocumento,
-          correo: datosEdicion.participante.correo,
-          telefono: datosEdicion.participante.telefono,
-          ciudad: datosEdicion.participante.ciudad,
-          termino: datosEdicion.participante.termino,
-          tipoDocumento: datosEdicion.participante.tipoDocumento
-        } : null,
-        curso: datosEdicion.curso ? {
-          nombre: datosEdicion.curso.nombre,
-          horasAcademicas: datosEdicion.curso.horasAcademicas,
-          ponente: datosEdicion.curso.ponente,
-          fechaInicio: datosEdicion.curso.fechaInicio,
-          fechaFin: datosEdicion.curso.fechaFin,
-          modalidad: datosEdicion.curso.modalidad
-        } : null,
-        datosAdicionales: datosEdicion.datosAdicionales || {}
-      };
-
-      const response = await fetch(`/api/certificados/${certificadoSeleccionado.id}`, {
-        method: 'PUT',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
+      const res = await fetch(`/api/lotes/${loteId}/certificados`, {
+        credentials: 'include'
       });
 
-      if (!response.ok) {
-        throw new Error('Error al guardar cambios');
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        alert('Certificado actualizado exitosamente. El PDF ha sido regenerado.');
-        setCertificadoSeleccionado(data.data);
-        setDatosEdicion(data.data);
-        setEditando(false);
-        loadCertificados(); // Recargar lista
+      if (res.ok) {
+        const data = await res.json();
+        setParticipantes(Array.isArray(data.data.certificados) ? data.data.certificados : []);
       }
     } catch (error) {
-      console.error('Error al guardar:', error);
-      alert('Error al guardar los cambios');
+      console.error('Error al cargar participantes:', error);
     } finally {
-      setGuardando(false);
+      setLoading(false);
     }
   };
 
-  const handleBusqueda = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPage(1);
-    loadCertificados();
+  const filterAndSortParticipantes = () => {
+    let filtered = [...participantes];
+
+    if (estadoFiltro !== 'todos') {
+      filtered = filtered.filter(p => p.estado === estadoFiltro);
+    }
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.nombre_completo.toLowerCase().includes(term) ||
+        p.numero_documento.includes(term) ||
+        (p.correo_electronico?.toLowerCase().includes(term))
+      );
+    }
+
+    filtered.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortField) {
+        case 'nombre':
+          comparison = a.apellidos.localeCompare(b.apellidos);
+          break;
+        case 'documento':
+          comparison = a.numero_documento.localeCompare(b.numero_documento);
+          break;
+        case 'fecha':
+          comparison = new Date(a.fecha_emision).getTime() - new Date(b.fecha_emision).getTime();
+          break;
+      }
+
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
+
+    setFilteredParticipantes(filtered);
   };
 
-  if (loading && certificados.length === 0) {
+  const startEdit = (participante: Participante) => {
+    setEditingId(participante.participante_id);
+    setEditData({
+      id: participante.participante_id,
+      termino: participante.termino || '',
+      nombres: participante.nombres,
+      apellidos: participante.apellidos,
+      correo_electronico: participante.correo_electronico || ''
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditData(null);
+  };
+
+  const saveEdit = async () => {
+    if (!editData) return;
+
+    try {
+      setSaving(true);
+      const res = await fetch(`/api/participantes/${slug}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          participante_id: editData.id,
+          termino: editData.termino || null,
+          nombres: editData.nombres,
+          apellidos: editData.apellidos,
+          correo_electronico: editData.correo_electronico || null
+        })
+      });
+
+      if (res.ok) {
+        await loadParticipantes();
+        setEditingId(null);
+        setEditData(null);
+        alert('✅ Participante actualizado correctamente');
+      } else {
+        throw new Error('Error al guardar');
+      }
+    } catch (error) {
+      console.error('Error al guardar:', error);
+      alert('❌ Error al actualizar el participante');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const downloadCertificate = async (certificadoId: number, codigo: string) => {
+    try {
+      const res = await fetch(`/api/certificados/${certificadoId}/descargar`, {
+        credentials: 'include'
+      });
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `certificado-${codigo}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Error al descargar:', error);
+      alert('Error al descargar el certificado');
+    }
+  };
+
+  // Función para previsualizar certificado
+  const previewCertificate = (certificadoId: number, codigo: string) => {
+    setPreviewPdf({
+      isOpen: true,
+      certificadoId,
+      codigo
+    });
+  };
+
+  const toggleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('asc');
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Cargando certificados...</p>
-        </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
+  const stats = {
+    total: participantes.length,
+    activos: participantes.filter(p => p.estado === 'activo').length,
+    revocados: participantes.filter(p => p.estado === 'revocado').length
+  };
+
+  // Calcular paginación
+  const totalPages = Math.ceil(filteredParticipantes.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentParticipantes = filteredParticipantes.slice(startIndex, endIndex);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="flex h-screen">
-        {/* Panel Izquierdo - Lista de Certificados */}
-        <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
-          {/* Header */}
-          <div className="p-6 border-b border-gray-200">
+    <div className="min-h-screen bg-gray-50">
+      {/* Modal de previsualización PDF */}
+      <PdfPreviewModal
+        isOpen={previewPdf.isOpen}
+        onClose={() => setPreviewPdf({ isOpen: false, certificadoId: 0, codigo: '' })}
+        certificadoId={previewPdf.certificadoId}
+        codigo={previewPdf.codigo}
+      />
+
+      <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  Participantes del Lote #{loteId}
+                </h1>
+                <p className="text-sm text-gray-600">
+                  {stats.total} participantes • {stats.activos} activos • {stats.revocados} revocados
+                </p>
+              </div>
+            </div>
             <button
               onClick={() => router.push(`/${slug}/lotes`)}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
-              <ArrowLeft className="w-5 h-5" />
-              Volver a Lotes
+              ← Volver a Lotes
             </button>
+          </div>
+        </div>
+      </div>
 
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Certificados
-            </h1>
-            <p className="text-sm text-gray-600">
-              {total} certificados en total
-            </p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por nombre, DNI o correo..."
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
 
-            {/* Búsqueda */}
-            <form onSubmit={handleBusqueda} className="mt-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar por código, nombre o documento..."
-                  value={busqueda}
-                  onChange={(e) => setBusqueda(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
-              </div>
-            </form>
+            <div>
+              <select
+                value={estadoFiltro}
+                onChange={(e) => setEstadoFiltro(e.target.value as any)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="todos">Todos los estados</option>
+                <option value="activo">Solo activos</option>
+                <option value="revocado">Solo revocados</option>
+              </select>
+            </div>
           </div>
 
-          {/* Lista de Certificados */}
-          <div className="flex-1 overflow-y-auto">
-            {certificados.map((cert) => (
-              <div
-                key={cert.id}
-                onClick={() => seleccionarCertificado(cert)}
-                className={`p-4 border-b border-gray-200 cursor-pointer hover:bg-gray-50 transition-colors ${
-                  certificadoSeleccionado?.id === cert.id ? 'bg-indigo-50 border-l-4 border-l-indigo-600' : ''
-                }`}
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900">
-                      {cert.participante
-                        ? `${cert.participante.nombres} ${cert.participante.apellidos}`
-                        : 'Sin participante'}
-                    </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Código: {cert.codigo}
-                    </p>
-                    {cert.participante?.numeroDocumento && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        Doc: {cert.participante.numeroDocumento}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      descargarCertificado(cert.id);
-                    }}
-                    className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                  >
-                    <Download className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+          <div className="mt-4 flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-500" />
+            <span className="text-sm text-gray-600">Ordenar por:</span>
+            <button
+              onClick={() => toggleSort('nombre')}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                sortField === 'nombre'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Nombre {sortField === 'nombre' && (sortOrder === 'asc' ? '↑' : '↓')}
+            </button>
+            <button
+              onClick={() => toggleSort('documento')}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                sortField === 'documento'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Documento {sortField === 'documento' && (sortOrder === 'asc' ? '↑' : '↓')}
+            </button>
+            <button
+              onClick={() => toggleSort('fecha')}
+              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                sortField === 'fecha'
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              Fecha {sortField === 'fecha' && (sortOrder === 'asc' ? '↑' : '↓')}
+            </button>
+          </div>
+        </div>
 
-            {certificados.length === 0 && (
-              <div className="p-8 text-center text-gray-500">
-                No se encontraron certificados
-              </div>
-            )}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    #
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Código
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Participante
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Documento
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Correo
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Estado
+                  </th>
+                  <th className="px-6 py-4 text-right text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {currentParticipantes.map((participante, index) => {
+                  const isEditing = editingId === participante.participante_id;
+                  const globalIndex = startIndex + index + 1; // Índice global considerando la paginación
+
+                  return (
+                    <tr
+                      key={participante.certificado_id}
+                      className="hover:bg-blue-50/50 transition-all duration-200 border-b border-gray-100"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center justify-center w-8 h-8 text-xs font-bold text-blue-700 bg-blue-100 rounded-lg">
+                          {globalIndex}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-indigo-700 bg-indigo-100 px-3 py-1.5 rounded-lg">
+                          <FileText className="w-3 h-3" />
+                          {participante.codigo}
+                        </span>
+                      </td>
+                      
+                      <td className="px-6 py-4">
+                        {isEditing && editData ? (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={editData.termino}
+                              onChange={(e) => setEditData({ ...editData, termino: e.target.value })}
+                              placeholder="Sr./Sra./Ing."
+                              className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                            />
+                            <input
+                              type="text"
+                              value={editData.nombres}
+                              onChange={(e) => setEditData({ ...editData, nombres: e.target.value })}
+                              placeholder="Nombres"
+                              className="w-full px-3 py-2 text-sm font-medium border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
+                            />
+                            <input
+                              type="text"
+                              value={editData.apellidos}
+                              onChange={(e) => setEditData({ ...editData, apellidos: e.target.value })}
+                              placeholder="Apellidos"
+                              className="w-full px-3 py-2 text-sm font-medium border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              
+                              {participante.nombres}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {participante.curso}
+                            </p>
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium text-gray-500 uppercase">
+                            {participante.tipo_documento}
+                          </span>
+                          <span className="text-sm font-semibold text-gray-900 mt-0.5">
+                            {participante.numero_documento}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        {isEditing && editData ? (
+                          <input
+                            type="email"
+                            value={editData.correo_electronico}
+                            onChange={(e) => setEditData({ ...editData, correo_electronico: e.target.value })}
+                            placeholder="correo@ejemplo.com"
+                            className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        ) : (
+                          <div className="text-sm">
+                            {participante.correo_electronico ? (
+                              <span className="text-gray-700">{participante.correo_electronico}</span>
+                            ) : (
+                              <span className="text-gray-400 italic text-xs">Sin correo</span>
+                            )}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {participante.estado === 'activo' ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            Activo
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r from-red-100 to-rose-100 text-red-700 border border-red-200">
+                            <XCircle className="w-3.5 h-3.5" />
+                            Revocado
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        {isEditing ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={saveEdit}
+                              disabled={saving}
+                              className="p-2.5 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Guardar cambios"
+                            >
+                              {saving ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Save className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={cancelEdit}
+                              disabled={saving}
+                              className="p-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all"
+                              title="Cancelar"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => startEdit(participante)}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all hover:shadow-sm"
+                              title="Editar participante"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => previewCertificate(participante.certificado_id, participante.codigo)}
+                              className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-all hover:shadow-sm"
+                              title="Vista previa del certificado"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => downloadCertificate(participante.certificado_id, participante.codigo)}
+                              className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-all hover:shadow-sm"
+                              title="Descargar certificado"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
 
-          {/* Paginación */}
-          {totalPages > 1 && (
-            <div className="p-4 border-t border-gray-200 flex items-center justify-between">
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Anterior
-              </button>
-              <span className="text-sm text-gray-600">
-                {page} / {totalPages}
-              </span>
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Siguiente
-              </button>
+          {filteredParticipantes.length === 0 && (
+            <div className="text-center py-12">
+              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                No se encontraron participantes
+              </h3>
+              <p className="text-gray-600">
+                {searchTerm
+                  ? 'Intenta con otros términos de búsqueda'
+                  : 'Este lote no tiene participantes registrados'}
+              </p>
             </div>
           )}
         </div>
 
-        {/* Panel Derecho - Visualizador y Editor */}
-        <div className="flex-1 flex flex-col">
-          {certificadoSeleccionado ? (
-            <>
-              {/* Header del Certificado */}
-              <div className="bg-white border-b border-gray-200 p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      {certificadoSeleccionado.codigo}
-                    </h2>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Emitido: {new Date(certificadoSeleccionado.fechaEmision).toLocaleDateString('es-ES')}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    {!editando ? (
+        {/* Paginación */}
+        {totalPages > 1 && (
+          <div className="mt-6 bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Mostrando {startIndex + 1} - {Math.min(endIndex, filteredParticipantes.length)} de {filteredParticipantes.length} certificados
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(1)}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Primera
+                </button>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  ← Anterior
+                </button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1;
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1;
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i;
+                    } else {
+                      pageNum = currentPage - 2 + i;
+                    }
+
+                    return (
                       <button
-                        onClick={() => setEditando(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          currentPage === pageNum
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                        }`}
                       >
-                        <Edit2 className="w-4 h-4" />
-                        Editar
+                        {pageNum}
                       </button>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => {
-                            setEditando(false);
-                            setDatosEdicion(certificadoSeleccionado);
-                          }}
-                          className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
-                        >
-                          <X className="w-4 h-4" />
-                          Cancelar
-                        </button>
-                        <button
-                          onClick={guardarEdicion}
-                          disabled={guardando}
-                          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400"
-                        >
-                          {guardando ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              Guardando...
-                            </>
-                          ) : (
-                            <>
-                              <Save className="w-4 h-4" />
-                              Guardar
-                            </>
-                          )}
-                        </button>
-                      </>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* Visualizador PDF */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Eye className="w-5 h-5 text-gray-600" />
-                      <h3 className="font-semibold text-gray-900">Vista Previa del PDF</h3>
-                    </div>
-                    <button
-                      onClick={() => descargarCertificado(certificadoSeleccionado.id)}
-                      className="flex items-center gap-2 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                    >
-                      <Download className="w-4 h-4" />
-                      Descargar
-                    </button>
-                  </div>
-                  <div className="p-4">
-                    <iframe
-                      src={certificadoSeleccionado.archivoUrl}
-                      className="w-full h-[500px] border border-gray-200 rounded-lg"
-                      title="Vista previa del certificado"
-                    />
-                  </div>
-                </div>
-
-                {/* Datos del Participante */}
-                {certificadoSeleccionado.participante && (
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <User className="w-5 h-5 text-indigo-600" />
-                      <h3 className="font-semibold text-gray-900">Datos del Participante</h3>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombres</label>
-                        {editando ? (
-                          <input
-                            type="text"
-                            value={datosEdicion.participante?.nombres || ''}
-                            onChange={(e) => setDatosEdicion({
-                              ...datosEdicion,
-                              participante: { ...datosEdicion.participante, nombres: e.target.value }
-                            })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                          />
-                        ) : (
-                          <p className="text-gray-900">{certificadoSeleccionado.participante.nombres}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Apellidos</label>
-                        {editando ? (
-                          <input
-                            type="text"
-                            value={datosEdicion.participante?.apellidos || ''}
-                            onChange={(e) => setDatosEdicion({
-                              ...datosEdicion,
-                              participante: { ...datosEdicion.participante, apellidos: e.target.value }
-                            })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                          />
-                        ) : (
-                          <p className="text-gray-900">{certificadoSeleccionado.participante.apellidos}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Documento</label>
-                        {editando ? (
-                          <input
-                            type="text"
-                            value={datosEdicion.participante?.numeroDocumento || ''}
-                            onChange={(e) => setDatosEdicion({
-                              ...datosEdicion,
-                              participante: { ...datosEdicion.participante, numeroDocumento: e.target.value }
-                            })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                          />
-                        ) : (
-                          <p className="text-gray-900">{certificadoSeleccionado.participante.numeroDocumento}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Correo</label>
-                        {editando ? (
-                          <input
-                            type="email"
-                            value={datosEdicion.participante?.correo || ''}
-                            onChange={(e) => setDatosEdicion({
-                              ...datosEdicion,
-                              participante: { ...datosEdicion.participante, correo: e.target.value }
-                            })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                          />
-                        ) : (
-                          <p className="text-gray-900">{certificadoSeleccionado.participante.correo || 'N/A'}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Datos del Curso */}
-                {certificadoSeleccionado.curso && (
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                    <div className="flex items-center gap-2 mb-4">
-                      <BookOpen className="w-5 h-5 text-indigo-600" />
-                      <h3 className="font-semibold text-gray-900">Datos del Curso</h3>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Curso</label>
-                        {editando ? (
-                          <input
-                            type="text"
-                            value={datosEdicion.curso?.nombre || ''}
-                            onChange={(e) => setDatosEdicion({
-                              ...datosEdicion,
-                              curso: { ...datosEdicion.curso, nombre: e.target.value }
-                            })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                          />
-                        ) : (
-                          <p className="text-gray-900">{certificadoSeleccionado.curso.nombre}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Horas Académicas</label>
-                        {editando ? (
-                          <input
-                            type="number"
-                            value={datosEdicion.curso?.horasAcademicas || ''}
-                            onChange={(e) => setDatosEdicion({
-                              ...datosEdicion,
-                              curso: { ...datosEdicion.curso, horasAcademicas: parseInt(e.target.value) }
-                            })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                          />
-                        ) : (
-                          <p className="text-gray-900">{certificadoSeleccionado.curso.horasAcademicas || 'N/A'}</p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Ponente</label>
-                        {editando ? (
-                          <input
-                            type="text"
-                            value={datosEdicion.curso?.ponente || ''}
-                            onChange={(e) => setDatosEdicion({
-                              ...datosEdicion,
-                              curso: { ...datosEdicion.curso, ponente: e.target.value }
-                            })}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                          />
-                        ) : (
-                          <p className="text-gray-900">{certificadoSeleccionado.curso.ponente || 'N/A'}</p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <FileText className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                <p className="text-lg">Selecciona un certificado para ver sus detalles</p>
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Siguiente →
+                </button>
+                <button
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Última
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
+
+        <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+          <div className="flex items-start gap-3">
+            <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
+            <div className="text-sm text-blue-800">
+              <p className="font-semibold mb-1">💡 Consejos:</p>
+              <ul className="list-disc list-inside space-y-1 text-blue-700">
+                <li>Haz clic en el ícono de editar para modificar los datos del participante</li>
+                <li>Usa el ícono de vista previa (👁️) para generar y ver el certificado en tiempo real</li>
+                <li>Los cambios se guardan inmediatamente</li>
+                <li>La vista previa genera el PDF dinámicamente con los datos actualizados</li>
+                <li>Puedes descargar certificados individuales con el ícono de descarga</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
     </div>
