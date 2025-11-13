@@ -36,25 +36,42 @@ export default function ParticipantesPage() {
   const [participante, setParticipante] = useState<Participante | null>(null);
   const [noEncontrado, setNoEncontrado] = useState(false);
   const [empresaId, setEmpresaId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // Estados para edición
   const [editandoCertificado, setEditandoCertificado] = useState<number | null>(null);
   const [nombreEditado, setNombreEditado] = useState('');
   const [regenerando, setRegenerando] = useState<number | null>(null);
 
-  // Obtener empresaId del localStorage
+  // Obtener empresaId desde el API (igual que el dashboard)
   useEffect(() => {
-    const empresaData = localStorage.getItem('empresa');
-    if (empresaData) {
+    const loadEmpresa = async () => {
       try {
-        const empresa = JSON.parse(empresaData);
-        setEmpresaId(empresa.id);
-        console.log('📌 Empresa ID cargado:', empresa.id);
+        const response = await fetch(`/api/dashboard/${slug}`, {
+          credentials: 'include'
+        });
+
+        if (response.status === 401) {
+          router.push(`/login/${slug}`);
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error('Error al cargar empresa');
+        }
+
+        const data = await response.json();
+        setEmpresaId(data.empresa.id);
+        console.log('📌 Empresa ID cargado:', data.empresa.id);
+        setLoading(false);
       } catch (error) {
-        console.error('Error parsing empresa data:', error);
+        console.error('Error:', error);
+        router.push(`/login/${slug}`);
       }
-    }
-  }, []);
+    };
+
+    loadEmpresa();
+  }, [slug, router]);
 
   const buscarParticipante = async () => {
     if (!terminoBusqueda.trim()) {
@@ -181,6 +198,17 @@ export default function ParticipantesPage() {
       buscarParticipante();
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
