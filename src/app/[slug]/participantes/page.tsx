@@ -138,58 +138,81 @@ export default function ParticipantesPage() {
     setNombreEditado('');
   };
 
-  const guardarYRegenerar = async (certificadoId: number) => {
-    if (!nombreEditado.trim()) {
-      alert('El nombre no puede estar vacío');
-      return;
+const guardarYRegenerar = async (certificadoId: number) => {
+  if (!nombreEditado.trim()) {
+    alert('El nombre no puede estar vacío');
+    return;
+  }
+
+  setRegenerando(certificadoId);
+
+  try {
+    console.log(`✏️ Guardando nombre para certificado ${certificadoId}: "${nombreEditado}"`);
+
+    // PASO 1: Guardar el nombre editado
+    const editResponse = await fetch(`/api/certificados/${certificadoId}/editar-nombre`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        nuevoNombre: nombreEditado
+      })
+    });
+
+    if (!editResponse.ok) {
+      const error = await editResponse.json();
+      throw new Error(error.error || 'Error al guardar el nombre');
     }
 
-    setRegenerando(certificadoId);
+    const editResult = await editResponse.json();
+    console.log('✅ Nombre guardado:', editResult);
 
-    try {
-      console.log(`🔄 Regenerando certificado ${certificadoId} con nombre: "${nombreEditado}"`);
+    // PASO 2: Regenerar el certificado con el nuevo nombre
+    console.log(`🔄 Regenerando certificado ${certificadoId}...`);
+    
+    const regenResponse = await fetch(`/api/certificados/${certificadoId}/regenerar`, {
+      method: 'POST',
+      credentials: 'include'
+    });
 
-      const response = await fetch(`/api/certificados/${certificadoId}/regenerar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          nombrePersonalizado: nombreEditado
-        })
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Error al regenerar certificado');
-      }
-
-      const result = await response.json();
-      console.log('✅ Certificado regenerado:', result);
-
-      // Actualizar el certificado en el estado local
-      setParticipantes(prevParticipantes =>
-        prevParticipantes.map(p => ({
-          ...p,
-          certificados: p.certificados.map(cert =>
-            cert.id === certificadoId
-              ? { ...cert, nombre_actual: nombreEditado, tiene_override: true }
-              : cert
-          )
-        }))
-      );
-
-      setEditandoCertificado(null);
-      setNombreEditado('');
-      alert('Certificado regenerado exitosamente');
-    } catch (error) {
-      console.error('Error al regenerar:', error);
-      alert(error instanceof Error ? error.message : 'Error al regenerar el certificado');
-    } finally {
-      setRegenerando(null);
+    if (!regenResponse.ok) {
+      const error = await regenResponse.json();
+      throw new Error(error.error || 'Error al regenerar certificado');
     }
-  };
+
+    const regenResult = await regenResponse.json();
+    console.log('✅ Certificado regenerado:', regenResult);
+
+    // PASO 3: Actualizar el estado local
+    setParticipantes(prevParticipantes =>
+      prevParticipantes.map(p => ({
+        ...p,
+        certificados: p.certificados.map(cert =>
+          cert.id === certificadoId
+            ? { 
+                ...cert, 
+                nombre_actual: nombreEditado, 
+                tiene_override: true,
+                pdf_url: regenResult.data.rutaArchivo || cert.pdf_url // Actualizar URL del PDF
+              }
+            : cert
+        )
+      }))
+    );
+
+    setEditandoCertificado(null);
+    setNombreEditado('');
+    alert('✅ Certificado actualizado y regenerado exitosamente');
+
+  } catch (error) {
+    console.error('❌ Error:', error);
+    alert(error instanceof Error ? error.message : 'Error al procesar el certificado');
+  } finally {
+    setRegenerando(null);
+  }
+};
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {

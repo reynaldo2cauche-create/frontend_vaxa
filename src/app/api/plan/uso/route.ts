@@ -1,82 +1,150 @@
-// ============================================
-// =� app/api/plan/uso/route.ts
-// <� Endpoint para consultar el uso del plan de certificados
-// ============================================
-
 import { NextRequest, NextResponse } from 'next/server';
-import { AppDataSource } from '@/lib/db';
+import { getDataSource } from '@/lib/db';
 import { Empresa } from '@/lib/entities/Empresa';
-import { Usuario } from '@/lib/entities/Usuario';
 
 export async function GET(request: NextRequest) {
   try {
-    // 1. Inicializar base de datos
-    if (!AppDataSource.isInitialized) {
-      await AppDataSource.initialize();
-    }
+    const { searchParams } = new URL(request.url);
+    const empresaId = searchParams.get('empresaId');
 
-    // 2. Obtener usuario autenticado
-    const usuarioId = request.cookies.get('usuario_id')?.value;
-
-    if (!usuarioId) {
+    if (!empresaId) {
       return NextResponse.json(
-        { success: false, error: 'No autenticado' },
-        { status: 401 }
+        { error: 'Se requiere el ID de la empresa' },
+        { status: 400 }
       );
     }
 
-    // 3. Obtener usuario con empresa
-    const usuarioRepo = AppDataSource.getRepository(Usuario);
-    const usuario = await usuarioRepo.findOne({
-      where: { id: parseInt(usuarioId) },
-      relations: ['empresa']
-    });
+    const dataSource = await getDataSource();
+    const empresaRepo = dataSource.getRepository(Empresa);
 
-    if (!usuario || !usuario.empresa) {
-      return NextResponse.json(
-        { success: false, error: 'Usuario o empresa no encontrada' },
-        { status: 404 }
-      );
-    }
-
-    // 4. Obtener datos del plan
-    const empresaRepo = AppDataSource.getRepository(Empresa);
     const empresa = await empresaRepo.findOne({
-      where: { id: usuario.empresa.id }
+      where: { id: parseInt(empresaId) },
+      select: ['id', 'nombre', 'certificados_emitidos', 'limite_plan']
     });
 
     if (!empresa) {
       return NextResponse.json(
-        { success: false, error: 'Empresa no encontrada' },
+        { error: 'Empresa no encontrada' },
         { status: 404 }
       );
     }
 
-    // 5. Calcular datos del plan
-    const certificadosEmitidos = empresa.certificados_emitidos || 0;
-    const limitePlan = empresa.limite_plan || 100;
-    const certificadosDisponibles = Math.max(0, limitePlan - certificadosEmitidos);
-    const porcentajeUsado = Math.round((certificadosEmitidos / limitePlan) * 100);
-    const porcentajeDisponible = Math.max(0, 100 - porcentajeUsado);
+    const uso = {
+      empresa: empresa.nombre,
+      certificados_emitidos: empresa.certificados_emitidos,
+      limite_plan: empresa.limite_plan,
+      disponibles: empresa.limite_plan - empresa.certificados_emitidos,
+      porcentaje_uso: empresa.limite_plan > 0 
+        ? Math.round((empresa.certificados_emitidos / empresa.limite_plan) * 100)
+        : 0
+    };
 
     return NextResponse.json({
       success: true,
-      data: {
-        certificados_emitidos: certificadosEmitidos,
-        limite_plan: limitePlan,
-        certificados_disponibles: certificadosDisponibles,
-        porcentaje_usado: porcentajeUsado,
-        porcentaje_disponible: porcentajeDisponible,
-        esta_cerca_limite: porcentajeUsado >= 80,
-        plan_agotado: certificadosDisponibles <= 0
-      }
+      data: uso
     });
 
   } catch (error) {
-    console.error('L Error al consultar uso del plan:', error);
+    console.error('Error al obtener uso del plan:', error);
     return NextResponse.json(
-      { success: false, error: 'Error al consultar uso del plan' },
+      { 
+        error: 'Error interno del servidor',
+        details: error instanceof Error ? error.message : 'Error desconocido'
+      },
       { status: 500 }
     );
   }
 }
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { empresaId, accion, cantidad } = body;
+
+    if (!empresaId || !accion) {
+      return NextResponse.json(
+        { error: 'Se requiere empresaId y accion' },
+        { status: 400 }
+      );
+    }
+
+    const dataSource = await getDataSource();
+    const empresaRepo = dataSource.getRepository(Empresa);
+
+    const empresa = await empresaRepo.findOne({
+      where: { id: parseInt(empresaId) }
+    });
+
+    if (!empresa) {
+      return NextResponse.json(
+        { error: 'Empresa no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    if (accion === 'incrementar') {
+      // Verificar límite antes de incrementar
+      if (empresa.certificados_emitidos >= empresa.limite_plan) {
+        return NextResponse.json(
+          { 
+            error: 'Límite del plan alcanzado',
+            disponibles: 0,
+            emitidos: empresa.certificados_emitidos,
+            limite: empresa.limite_plan
+          },
+          { status: 403 }
+        );
+      }
+
+      empresa.certificados_emitidos += cantidad || 1;
+      await empresaRepo.save(empresa);
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          certificados_emitidos: empresa.certificados_emitidos,
+          disponibles: empresa.limite_plan - empresa.certificados_emitidos
+        }
+      });
+    }
+
+    if (accion === 'actualizar_limite') {
+      if (cantidad === undefined) {
+        return NextResponse.json(
+          { error: 'Se requiere cantidad para actualizar límite' },
+          { status: 400 }
+        );
+      }
+
+      empresa.limite_plan = cantidad;
+      await empresaRepo.save(empresa);
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          limite_plan: empresa.limite_plan,
+          certificados_emitidos: empresa.certificados_emitidos,
+          disponibles: empresa.limite_plan - empresa.certificados_emitidos
+        }
+      });
+    }
+
+    return NextResponse.json(
+      { error: 'Acción no válida' },
+      { status: 400 }
+    );
+
+  } catch (error) {
+    console.error('Error al actualizar uso del plan:', error);
+    return NextResponse.json(
+      { 
+        error: 'Error interno del servidor',
+        details: error instanceof Error ? error.message : 'Error desconocido'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// Configuración para evitar caché en desarrollo
+export const dynamic = 'force-dynamic';

@@ -194,7 +194,10 @@ export async function POST(req: NextRequest) {
       zip_url: null,
       tipo_documento: tipoDocumento,
       curso: curso,
-      usuario_id: null
+      usuario_id: null,
+ 
+  texto_estatico: textoEstatico  // 🆕 AGREGAR ESTA LÍNEA
+
     });
 
     await loteRepo.save(nuevoLote);

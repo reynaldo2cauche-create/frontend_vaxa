@@ -38,6 +38,10 @@ export class Lote {
   @Column({ nullable: true })
   usuario_id: number | null;
 
+   // 🆕 NUEVO: Guardar el texto estático personalizado
+  @Column({ type: 'text', nullable: true })
+  texto_estatico!: string | null;
+
   // ✅ Relaciones con string literals
   @ManyToOne('Empresa', 'lotes', { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'empresa_id' })

@@ -623,53 +623,44 @@ static async generarCertificado(
   /**
    * Obtiene un certificado por su código (para validación)
    */
-  static async obtenerPorCodigo(codigo: string): Promise<ResultadoValidacion> {
-    try {
-      const certificadoRepo = AppDataSource.getRepository(Certificado);
-      const datoCertificadoRepo = AppDataSource.getRepository(DatoCertificado);
+ static async obtenerPorCodigo(codigo: string): Promise<ResultadoValidacion> {
+  try {
+    const certificadoRepo = AppDataSource.getRepository(Certificado);
+    const datoCertificadoRepo = AppDataSource.getRepository(DatoCertificado);
 
-      // Buscar certificado
-      const certificado = await certificadoRepo.findOne({
-        where: { codigo },
-        relations: ['empresa']
-      });
+    const certificado = await certificadoRepo.findOne({
+      where: { codigo },
+      relations: ['empresa']
+    });
 
-      if (!certificado) {
-        return {
-          valido: false,
-          mensaje: 'Certificado no encontrado'
-        };
-      }
-
-      // Obtener datos del certificado
-      const datos = await datoCertificadoRepo.find({
-        where: { certificado_id: certificado.id }
-      });
-
-      const datosFormateados: { [campo: string]: string } = {};
-      datos.forEach(dato => {
-        datosFormateados[dato.campo] = dato.valor;
-      });
-
-      // Validar estado
-      if (certificado.estado === EstadoCertificado.REVOCADO) {
-        return {
-          valido: false,
-          certificado: {
-            codigo: certificado.codigo,
-            empresa: certificado.empresa.nombre,
-            logoEmpresa: certificado.empresa.logo || undefined,
-            fechaEmision: certificado.fecha_emision,
-            estado: certificado.estado,
-            archivoUrl: certificado.archivo_url,
-            datos: datosFormateados
-          },
-          mensaje: 'Este certificado ha sido revocado'
-        };
-      }
-
+    if (!certificado) {
       return {
-        valido: true,
+        valido: false,
+        mensaje: 'Certificado no encontrado'
+      };
+    }
+
+    // Obtener datos del certificado
+    const datos = await datoCertificadoRepo.find({
+      where: { certificado_id: certificado.id }
+    });
+
+    const datosFormateados: { [campo: string]: string } = {};
+    datos.forEach(dato => {
+      datosFormateados[dato.campo] = dato.valor;
+    });
+
+    // 🆕 PRIORIZAR _nombre_override para mostrar en validación
+    const nombreOverride = datos.find(d => d.campo === '_nombre_override');
+    if (nombreOverride && nombreOverride.valor.trim()) {
+      datosFormateados['nombre'] = nombreOverride.valor.trim();
+      console.log(`   ✏️ Mostrando nombre personalizado en validación: "${nombreOverride.valor.trim()}"`);
+    }
+
+    // Validar estado
+    if (certificado.estado === EstadoCertificado.REVOCADO) {
+      return {
+        valido: false,
         certificado: {
           codigo: certificado.codigo,
           empresa: certificado.empresa.nombre,
@@ -678,13 +669,28 @@ static async generarCertificado(
           estado: certificado.estado,
           archivoUrl: certificado.archivo_url,
           datos: datosFormateados
-        }
+        },
+        mensaje: 'Este certificado ha sido revocado'
       };
-    } catch (error) {
-      console.error('Error al obtener certificado:', error);
-      throw new Error('Error al validar certificado');
     }
+
+    return {
+      valido: true,
+      certificado: {
+        codigo: certificado.codigo,
+        empresa: certificado.empresa.nombre,
+        logoEmpresa: certificado.empresa.logo || undefined,
+        fechaEmision: certificado.fecha_emision,
+        estado: certificado.estado,
+        archivoUrl: certificado.archivo_url,
+        datos: datosFormateados
+      }
+    };
+  } catch (error) {
+    console.error('Error al obtener certificado:', error);
+    throw new Error('Error al validar certificado');
   }
+}
 
   /**
    * Revoca un certificado (cambia su estado)
@@ -836,5 +842,125 @@ static async generarCertificado(
    */
   static obtenerConfigEstandar() {
     return CONFIG_ESTANDAR;
+  }
+    
+ static async regenerarCertificado(certificadoId: number): Promise<CertificadoGenerado> {
+  try {
+    const certificadoRepo = AppDataSource.getRepository(Certificado);
+    const datoCertificadoRepo = AppDataSource.getRepository(DatoCertificado);
+    const loteRepo = AppDataSource.getRepository(Lote);
+    const certificadoFirmaRepo = AppDataSource.getRepository(CertificadoFirma);
+
+    const certificado = await certificadoRepo.findOne({
+      where: { id: certificadoId }
+    });
+
+    if (!certificado) {
+      throw new Error('Certificado no encontrado');
+    }
+
+    const lote = certificado.lote_id
+      ? await loteRepo.findOne({ where: { id: certificado.lote_id } })
+      : null;
+
+    const textoEstatico = lote?.texto_estatico || undefined;
+
+    // 3. Obtener datos del certificado
+    const datos = await datoCertificadoRepo.find({
+      where: { certificado_id: certificadoId }
+    });
+
+    const datosMapeados: DatosCertificado = {};
+    datos.forEach(dato => {
+      datosMapeados[dato.campo] = dato.valor;
+    });
+
+    // 🆕 PRIORIZAR _nombre_override si existe
+    const nombreOverride = datos.find(d => d.campo === '_nombre_override');
+    if (nombreOverride && nombreOverride.valor.trim()) {
+      datosMapeados['nombre'] = nombreOverride.valor.trim();
+      console.log(`   ✏️ Usando nombre personalizado: "${nombreOverride.valor.trim()}"`);
+    }
+
+    // 4. Obtener firmas del certificado
+    const certificadoFirmas = await certificadoFirmaRepo.find({
+      where: { certificadoId: certificadoId },
+      order: { orden: 'ASC' }
+    });
+    const firmasIds = certificadoFirmas.map(cf => cf.firmaId);
+
+    // 5. Regenerar certificado
+    const certGenerado = await this.generarCertificado(
+      certificado.empresa_id,
+      datosMapeados,
+      certificado.lote_id ?? undefined,
+      textoEstatico,
+      firmasIds.length > 0 ? firmasIds : undefined
+    );
+
+    // 6. Actualizar URL del archivo en BD
+    certificado.archivo_url = certGenerado.rutaArchivo;
+    await certificadoRepo.save(certificado);
+
+    console.log(`   ✅ Certificado regenerado exitosamente`);
+
+    return certGenerado;
+  } catch (error) {
+    console.error('Error al regenerar certificado:', error);
+    throw new Error(`Error al regenerar certificado: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+  }
+}
+  /**
+   * Regenera todos los certificados de un lote
+   */
+  static async regenerarLote(loteId: number): Promise<CertificadoGenerado[]> {
+    try {
+      const certificadoRepo = AppDataSource.getRepository(Certificado);
+      const loteRepo = AppDataSource.getRepository(Lote);
+
+      // 1. Obtener lote con texto_estatico
+      const lote = await loteRepo.findOne({
+        where: { id: loteId }
+      });
+
+      if (!lote) {
+        throw new Error('Lote no encontrado');
+      }
+
+      console.log(`🔄 Regenerando lote ${loteId}`);
+      console.log(`   📝 Texto estático: ${lote.texto_estatico ? 'Disponible' : 'No disponible'}`);
+
+      // 2. Obtener todos los certificados del lote
+      const certificados = await certificadoRepo.find({
+        where: { lote_id: loteId }
+      });
+
+      console.log(`   📋 ${certificados.length} certificados a regenerar`);
+
+      // 3. Regenerar cada certificado
+      const certificadosGenerados: CertificadoGenerado[] = [];
+
+      for (let i = 0; i < certificados.length; i++) {
+        const cert = certificados[i];
+        
+        try {
+          const certGenerado = await this.regenerarCertificado(cert.id);
+          certificadosGenerados.push(certGenerado);
+
+          if ((i + 1) % 10 === 0 || i === certificados.length - 1) {
+            console.log(`   ✓ Regenerados ${i + 1}/${certificados.length} certificados`);
+          }
+        } catch (error) {
+          console.error(`   ❌ Error regenerando certificado ${cert.codigo}:`, error);
+        }
+      }
+
+      console.log(`✅ Lote regenerado: ${certificadosGenerados.length}/${certificados.length} exitosos`);
+
+      return certificadosGenerados;
+    } catch (error) {
+      console.error('Error al regenerar lote:', error);
+      throw new Error(`Error al regenerar lote: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
   }
 }
