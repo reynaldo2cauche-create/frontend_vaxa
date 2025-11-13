@@ -49,6 +49,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log(`🔍 Buscando participante con termino: "${termino}" en empresa ${empresaId}`);
+
     const participanteRepo = AppDataSource.getRepository(Participante);
 
     // Búsqueda por nombre o DNI
@@ -63,7 +65,10 @@ export async function GET(request: NextRequest) {
       .take(50)
       .getMany();
 
+    console.log(`📋 Participantes encontrados: ${participantes.length}`);
+
     if (participantes.length === 0) {
+      console.log('❌ No se encontró ningún participante');
       return NextResponse.json(
         { success: false, error: 'No se encontraron participantes' },
         { status: 404 }
@@ -92,6 +97,12 @@ export async function GET(request: NextRequest) {
         .join(' ')
         .trim();
 
+      // Construir la URL completa del PDF
+      let pdfUrl = cert.archivo_url;
+      if (!pdfUrl.startsWith('http') && !pdfUrl.startsWith('/')) {
+        pdfUrl = '/' + pdfUrl;
+      }
+
       return {
         id: cert.id,
         codigo_unico: cert.codigo || 'SIN-CODIGO',
@@ -100,7 +111,7 @@ export async function GET(request: NextRequest) {
         tipo_documento: cert.lote?.tipo_documento || 'Certificado',
         curso: cert.lote?.curso || 'Sin curso',
         fecha_emision: cert.fecha_emision,
-        pdf_url: cert.archivo_url,
+        pdf_url: pdfUrl,
         lote_id: cert.lote?.id
       };
     });
