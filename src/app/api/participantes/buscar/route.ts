@@ -10,37 +10,20 @@ import { Usuario } from '@/lib/entities/Usuario';
 
 export async function GET(request: NextRequest) {
   try {
-    // Autenticación por cookies
     if (!AppDataSource.isInitialized) {
       await AppDataSource.initialize();
     }
 
-    const usuarioId = request.cookies.get('usuario_id')?.value;
-    if (!usuarioId) {
-      return NextResponse.json(
-        { success: false, error: 'No autenticado' },
-        { status: 401 }
-      );
-    }
-
-    // Obtener empresa del usuario
-    const usuarioRepo = AppDataSource.getRepository(Usuario);
-    const usuario = await usuarioRepo.findOne({
-      where: { id: parseInt(usuarioId) },
-      relations: ['empresa']
-    });
-
-    if (!usuario || !usuario.empresa) {
-      return NextResponse.json(
-        { success: false, error: 'Usuario o empresa no encontrada' },
-        { status: 404 }
-      );
-    }
-
-    const empresaId = usuario.empresa.id;
-
     const searchParams = request.nextUrl.searchParams;
-    const termino = searchParams.get('termino'); // Búsqueda por nombre o DNI
+    const empresaId = searchParams.get('empresaId');
+    const termino = searchParams.get('termino');
+
+    if (!empresaId) {
+      return NextResponse.json(
+        { success: false, error: 'empresaId es requerido' },
+        { status: 400 }
+      );
+    }
 
     if (!termino || termino.trim().length < 2) {
       return NextResponse.json(
@@ -56,7 +39,7 @@ export async function GET(request: NextRequest) {
     // Búsqueda por nombre o DNI
     const participantes = await participanteRepo
       .createQueryBuilder('p')
-      .where('p.empresa_id = :empresaId', { empresaId })
+      .where('p.empresa_id = :empresaId', { empresaId: parseInt(empresaId) })
       .andWhere(
         '(p.nombres LIKE :termino OR p.apellidos LIKE :termino OR p.numero_documento LIKE :termino OR p.correo_electronico LIKE :termino)',
         { termino: `%${termino}%` }

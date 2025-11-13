@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Search, User, FileText, Calendar, Download, Eye, Loader2, ArrowLeft, Edit2, Save, X, RefreshCw } from 'lucide-react';
 
@@ -35,15 +35,35 @@ export default function ParticipantesPage() {
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
   const [participante, setParticipante] = useState<Participante | null>(null);
   const [noEncontrado, setNoEncontrado] = useState(false);
+  const [empresaId, setEmpresaId] = useState<number | null>(null);
 
   // Estados para edición
   const [editandoCertificado, setEditandoCertificado] = useState<number | null>(null);
   const [nombreEditado, setNombreEditado] = useState('');
   const [regenerando, setRegenerando] = useState<number | null>(null);
 
+  // Obtener empresaId del localStorage
+  useEffect(() => {
+    const empresaData = localStorage.getItem('empresa');
+    if (empresaData) {
+      try {
+        const empresa = JSON.parse(empresaData);
+        setEmpresaId(empresa.id);
+        console.log('📌 Empresa ID cargado:', empresa.id);
+      } catch (error) {
+        console.error('Error parsing empresa data:', error);
+      }
+    }
+  }, []);
+
   const buscarParticipante = async () => {
     if (!terminoBusqueda.trim()) {
       alert('Por favor ingresa un DNI o nombre para buscar');
+      return;
+    }
+
+    if (!empresaId) {
+      alert('Error: No se pudo obtener el ID de la empresa. Por favor recarga la página.');
       return;
     }
 
@@ -52,8 +72,8 @@ export default function ParticipantesPage() {
     setParticipante(null);
 
     try {
-      console.log(`🔍 Buscando: "${terminoBusqueda}"`);
-      const response = await fetch(`/api/participantes/buscar?termino=${encodeURIComponent(terminoBusqueda)}`, {
+      console.log(`🔍 Buscando: "${terminoBusqueda}" en empresa ${empresaId}`);
+      const response = await fetch(`/api/participantes/buscar?termino=${encodeURIComponent(terminoBusqueda)}&empresaId=${empresaId}`, {
         credentials: 'include'
       });
 
