@@ -18,7 +18,9 @@ import {
   Eye,
   CheckCircle2,
   Package,
-  ChevronRight
+  ChevronRight,
+  Users,
+  FolderOpen
 } from 'lucide-react';
 import DescargarPlantillaExcel from './DescargarPlantillaExcel';
 import PlantillaUpload from './plantillaUpload';
@@ -388,6 +390,24 @@ export default function DashboardPage() {
                 <p className="text-xs text-gray-500">Sistema de Certificados</p>
               </div>
             </div>
+
+            {/* 🆕 MENÚ DE NAVEGACIÓN */}
+            <nav className="flex items-center gap-2">
+              <button
+                onClick={() => router.push(`/${slug}/participantes`)}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors font-medium"
+              >
+                <Users className="w-4 h-4" />
+                <span>Participantes</span>
+              </button>
+              <button
+                onClick={() => router.push(`/${slug}/dashboard/lotes`)}
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors font-medium"
+              >
+                <FolderOpen className="w-4 h-4" />
+                <span>Historial</span>
+              </button>
+            </nav>
 
             <div className="flex items-center gap-4">
               <div className="hidden sm:block text-right">

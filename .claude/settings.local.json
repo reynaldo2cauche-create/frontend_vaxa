@@ -33,7 +33,8 @@
       "Bash(\"C:\\Users\\Lucero\\Desktop\\frontend_vaxa\\src\\app\\api\\plan\\uso\\route.ts\")",
       "Bash(git add:*)",
       "Bash(del /f nul 2)",
-      "Bash($null)"
+      "Bash($null)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nSistema completo de contador de certificados y límite de plan\n\nImplementado sistema integral para controlar la emisión de certificados:\n\n✅ Modelo y Base de Datos\n- Agregados campos certificados_emitidos y limite_plan a entidad Empresa\n- Creada migración SQL para actualizar empresas existentes\n\n✅ Backend - Validación y Control\n- API /api/plan/uso para consultar uso del plan en tiempo real\n- Validación de límite ANTES de generar certificados\n- Incremento automático del contador POST-generación\n- Error 403 con detalles cuando se excede el límite\n- Las regeneraciones NO consumen del plan\n\n✅ Frontend - UI/UX\n- Componente ContadorPlan con indicadores visuales\n- Modal profesional ModalLimitePlan para errores de límite\n- PlanContext para estado global reactivo\n- Actualización automática sin recargar página\n- Integración en dashboard con PlanProvider\n\n✅ Mejoras de Flujo\n- Botón \"Generar Nuevo Lote\" en modal de éxito\n- Función reiniciarFormulario() para volver al paso 1\n- Sistema de colores: verde/amber/rojo según uso del plan\n\n✅ Funcionalidad Excel\n- Guardado automático del nombre del Excel como _nombre_override\n- Prioridad: personalizado > override > original\n- Garantiza que el certificado muestre el nombre del Excel\n\n🎨 Diseño compacto y responsive\n📊 Barra de progreso y estadísticas visuales\n🔄 Actualización en tiempo real post-generación\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
     ],
     "deny": [],
     "ask": []
