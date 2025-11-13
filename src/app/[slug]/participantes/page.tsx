@@ -33,7 +33,7 @@ export default function ParticipantesPage() {
 
   const [buscando, setBuscando] = useState(false);
   const [terminoBusqueda, setTerminoBusqueda] = useState('');
-  const [participante, setParticipante] = useState<Participante | null>(null);
+  const [participantes, setParticipantes] = useState<Participante[]>([]);
   const [noEncontrado, setNoEncontrado] = useState(false);
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,7 +86,7 @@ export default function ParticipantesPage() {
 
     setBuscando(true);
     setNoEncontrado(false);
-    setParticipante(null);
+    setParticipantes([]);
 
     try {
       console.log(`🔍 Buscando: "${terminoBusqueda}" en empresa ${empresaId}`);
@@ -114,12 +114,11 @@ export default function ParticipantesPage() {
       const data = await response.json();
       console.log('✅ Data recibida:', data);
 
-      if (data.success && data.data) {
-        setParticipante(data.data);
-        console.log('👤 Participante:', data.data);
-        console.log('📋 Certificados:', data.data.certificados?.length || 0);
+      if (data.success && data.data && Array.isArray(data.data)) {
+        setParticipantes(data.data);
+        console.log(`👥 Participantes encontrados: ${data.data.length}`);
       } else {
-        alert('No se encontraron datos del participante');
+        alert('No se encontraron datos de participantes');
       }
     } catch (error) {
       console.error('❌ Error completo:', error);
@@ -170,17 +169,16 @@ export default function ParticipantesPage() {
       console.log('✅ Certificado regenerado:', result);
 
       // Actualizar el certificado en el estado local
-      if (participante) {
-        const certificadosActualizados = participante.certificados.map(cert =>
-          cert.id === certificadoId
-            ? { ...cert, nombre_actual: nombreEditado, tiene_override: true }
-            : cert
-        );
-        setParticipante({
-          ...participante,
-          certificados: certificadosActualizados
-        });
-      }
+      setParticipantes(prevParticipantes =>
+        prevParticipantes.map(p => ({
+          ...p,
+          certificados: p.certificados.map(cert =>
+            cert.id === certificadoId
+              ? { ...cert, nombre_actual: nombreEditado, tiene_override: true }
+              : cert
+          )
+        }))
+      );
 
       setEditandoCertificado(null);
       setNombreEditado('');
@@ -285,61 +283,69 @@ export default function ParticipantesPage() {
           </div>
         )}
 
-        {/* RESULTADO */}
-        {participante && (
-          <div className="space-y-6">
-            {/* INFO DEL PARTICIPANTE */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <User className="w-6 h-6 text-green-600" />
-                <h2 className="text-2xl font-bold text-gray-800">Informacion del Participante</h2>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">Nombre Completo</p>
-                  <p className="text-lg font-semibold text-gray-900">{participante.nombre}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">DNI</p>
-                  <p className="text-lg font-semibold text-gray-900">{participante.dni}</p>
-                </div>
-                {participante.email && (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Email</p>
-                    <p className="text-lg font-semibold text-gray-900">{participante.email}</p>
-                  </div>
-                )}
-                {participante.telefono && (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Telefono</p>
-                    <p className="text-lg font-semibold text-gray-900">{participante.telefono}</p>
-                  </div>
-                )}
-              </div>
+        {/* RESULTADOS */}
+        {participantes.length > 0 && (
+          <div className="space-y-8">
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-4">
+              <p className="text-blue-800 font-semibold">
+                Se encontraron {participantes.length} participante{participantes.length !== 1 ? 's' : ''}
+              </p>
             </div>
 
-            {/* CERTIFICADOS */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <FileText className="w-6 h-6 text-blue-600" />
-                  <h2 className="text-2xl font-bold text-gray-800">
-                    Certificados ({participante.certificados.length})
-                  </h2>
-                </div>
-              </div>
+            {participantes.map((participante) => (
+              <div key={participante.id} className="space-y-6 pb-8 border-b-4 border-gray-200 last:border-b-0">
+                {/* INFO DEL PARTICIPANTE */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <User className="w-6 h-6 text-green-600" />
+                    <h2 className="text-2xl font-bold text-gray-800">Informacion del Participante</h2>
+                  </div>
 
-              {participante.certificados.length === 0 ? (
-                <div className="text-center py-12">
-                  <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600">
-                    Este participante aun no tiene certificados generados
-                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">Nombre Completo</p>
+                      <p className="text-lg font-semibold text-gray-900">{participante.nombre}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-1">DNI</p>
+                      <p className="text-lg font-semibold text-gray-900">{participante.dni}</p>
+                    </div>
+                    {participante.email && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Email</p>
+                        <p className="text-lg font-semibold text-gray-900">{participante.email}</p>
+                      </div>
+                    )}
+                    {participante.telefono && (
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Telefono</p>
+                        <p className="text-lg font-semibold text-gray-900">{participante.telefono}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <div className="grid grid-cols-1 gap-4">
-                  {participante.certificados.map((cert) => (
+
+                {/* CERTIFICADOS */}
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-6 h-6 text-blue-600" />
+                      <h2 className="text-2xl font-bold text-gray-800">
+                        Certificados ({participante.certificados.length})
+                      </h2>
+                    </div>
+                  </div>
+
+                  {participante.certificados.length === 0 ? (
+                    <div className="text-center py-12">
+                      <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-600">
+                        Este participante aun no tiene certificados generados
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {participante.certificados.map((cert) => (
                     <div
                       key={cert.id}
                       className="border-2 border-gray-200 rounded-xl p-6 hover:border-blue-300 hover:shadow-md transition-all"
@@ -456,10 +462,12 @@ export default function ParticipantesPage() {
                         </div>
                       </div>
                     </div>
-                  ))}
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            ))}
           </div>
         )}
       </main>

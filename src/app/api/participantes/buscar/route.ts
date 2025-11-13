@@ -58,58 +58,64 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Si solo hay un participante, devolver directamente su información
-    const participante = participantes[0];
+    // Obtener certificados para TODOS los participantes encontrados
     const certificadoRepo = AppDataSource.getRepository(Certificado);
 
-    const certificados = await certificadoRepo
-      .createQueryBuilder('c')
-      .leftJoinAndSelect('c.lote', 'l')
-      .leftJoinAndSelect('c.datos', 'd')
-      .where('c.participante_id = :participanteId', { participanteId: participante.id })
-      .orderBy('c.fecha_emision', 'DESC')
-      .getMany();
+    const participantesConCertificados = await Promise.all(
+      participantes.map(async (participante) => {
 
-    console.log(`🔍 Participante encontrado: ${participante.nombres} ${participante.apellidos}`);
-    console.log(`📋 Certificados: ${certificados.length}`);
+        const certificados = await certificadoRepo
+          .createQueryBuilder('c')
+          .leftJoinAndSelect('c.lote', 'l')
+          .leftJoinAndSelect('c.datos', 'd')
+          .where('c.participante_id = :participanteId', { participanteId: participante.id })
+          .orderBy('c.fecha_emision', 'DESC')
+          .getMany();
 
-    const certificadosFormateados = certificados.map(cert => {
-      const nombreOverride = cert.datos?.find(d => d.campo === '_nombre_override');
-      const nombreCompleto = [participante.termino, participante.nombres, participante.apellidos]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
+        console.log(`🔍 Participante: ${participante.nombres} ${participante.apellidos} - Certificados: ${certificados.length}`);
 
-      // Construir la URL completa del PDF
-      let pdfUrl = cert.archivo_url;
-      if (!pdfUrl.startsWith('http') && !pdfUrl.startsWith('/')) {
-        pdfUrl = '/' + pdfUrl;
-      }
+        const certificadosFormateados = certificados.map(cert => {
+          const nombreOverride = cert.datos?.find(d => d.campo === '_nombre_override');
+          const nombreCompleto = [participante.termino, participante.nombres, participante.apellidos]
+            .filter(Boolean)
+            .join(' ')
+            .trim();
 
-      return {
-        id: cert.id,
-        codigo_unico: cert.codigo || 'SIN-CODIGO',
-        nombre_actual: nombreOverride?.valor || nombreCompleto,
-        tiene_override: !!nombreOverride,
-        tipo_documento: cert.lote?.tipo_documento || 'Certificado',
-        curso: cert.lote?.curso || 'Sin curso',
-        fecha_emision: cert.fecha_emision,
-        pdf_url: pdfUrl,
-        lote_id: cert.lote?.id
-      };
-    });
+          // Construir la URL completa del PDF
+          let pdfUrl = cert.archivo_url;
+          if (!pdfUrl.startsWith('http') && !pdfUrl.startsWith('/')) {
+            pdfUrl = '/' + pdfUrl;
+          }
+
+          return {
+            id: cert.id,
+            codigo_unico: cert.codigo || 'SIN-CODIGO',
+            nombre_actual: nombreOverride?.valor || nombreCompleto,
+            tiene_override: !!nombreOverride,
+            tipo_documento: cert.lote?.tipo_documento || 'Certificado',
+            curso: cert.lote?.curso || 'Sin curso',
+            fecha_emision: cert.fecha_emision,
+            pdf_url: pdfUrl,
+            lote_id: cert.lote?.id
+          };
+        });
+
+        return {
+          id: participante.id,
+          dni: participante.numero_documento,
+          nombre: [participante.nombres, participante.apellidos].filter(Boolean).join(' '),
+          email: participante.correo_electronico,
+          telefono: participante.telefono || '',
+          empresa_id: participante.empresa_id,
+          certificados: certificadosFormateados
+        };
+      })
+    );
 
     return NextResponse.json({
       success: true,
-      data: {
-        id: participante.id,
-        dni: participante.numero_documento,
-        nombre: [participante.nombres, participante.apellidos].filter(Boolean).join(' '),
-        email: participante.correo_electronico,
-        telefono: participante.telefono || '',
-        empresa_id: participante.empresa_id,
-        certificados: certificadosFormateados
-      }
+      data: participantesConCertificados,
+      total: participantesConCertificados.length
     });
 
   } catch (error) {
