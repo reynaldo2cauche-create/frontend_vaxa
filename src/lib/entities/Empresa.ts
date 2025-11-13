@@ -33,6 +33,13 @@ export class Empresa {
   @Column({ type: 'varchar', length: 7, default: '#8B5CF6' })
   color_secundario: string;
 
+  // 🆕 Sistema de contador de certificados y plan
+  @Column({ type: 'int', default: 0 })
+  certificados_emitidos: number;
+
+  @Column({ type: 'int', default: 100 })
+  limite_plan: number;
+
   @CreateDateColumn()
   created_at: Date;
 

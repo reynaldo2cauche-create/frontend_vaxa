@@ -30,6 +30,10 @@ import * as XLSX from 'xlsx';
 import LogosUpload from './logosUpload';
 import type { Logo } from '@/lib/entities/Logo';
 import ModalExitoCertificados from '@/components/ModalExitoCertificado/route';
+import ModalLimitePlan from '@/components/ModalLimitePlan/route';
+import { PlanProvider } from '@/contexts/PlanContext';
+import ContadorPlan from './ContadorPlan';
+import { ActualizadorPlanAuto } from './ActualizadorPlanAuto';
 
 // ✅ INTERFACE UNIFICADA para firmas
 interface Firma {
@@ -93,6 +97,16 @@ export default function DashboardPage() {
   const [descargandoZip, setDescargandoZip] = useState(false);
   const [logos, setLogos] = useState<Logo[]>([]);
   const [mostrarModalExito, setMostrarModalExito] = useState(false);
+
+  // 🆕 Estados para modal de límite de plan
+  const [mostrarModalLimite, setMostrarModalLimite] = useState(false);
+  const [errorLimite, setErrorLimite] = useState<{
+    mensaje: string;
+    disponibles: number;
+    solicitados: number;
+    emitidos: number;
+    limite: number;
+  } | null>(null);
 
   const [stats, setStats] = useState<DashboardStats>({
     total_certificados: 0,
@@ -186,6 +200,29 @@ export default function DashboardPage() {
     }
   };
 
+  // 🆕 Función para reiniciar el formulario y volver al paso 1
+  const reiniciarFormulario = () => {
+    // Resetear estados de pasos completados
+    setPlantillaExcelDescargada(false);
+    setPlantillaImagenSubida(false);
+    setExcelSubido(false);
+    setExcelValido(false);
+    setTextoConfigurado(false);
+    setFirmasSeleccionadas(false);
+
+    // Limpiar datos
+    setDatosExcel([]);
+    setTextoEstatico('');
+    setTipoDocumento('');
+    setCurso('');
+    setFirmas([]);
+    setResultadoGeneracion(null);
+
+    // Volver al paso 1
+    setPasoActual(1);
+    console.log('🔄 Formulario reiniciado - Listo para generar nuevo lote');
+  };
+
   const generarCertificados = async () => {
     if (datosExcel.length === 0) {
       alert('No hay datos para generar certificados');
@@ -252,6 +289,20 @@ export default function DashboardPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
+
+        // 🆕 Capturar error de límite de plan (403)
+        if (response.status === 403 && errorData.error === 'Límite de plan excedido') {
+          setErrorLimite({
+            mensaje: errorData.mensaje,
+            disponibles: errorData.disponibles,
+            solicitados: errorData.solicitados,
+            emitidos: errorData.emitidos,
+            limite: errorData.limite
+          });
+          setMostrarModalLimite(true);
+          return; // No mostrar alert genérico
+        }
+
         throw new Error(errorData.error || 'Error al generar certificados');
       }
 
@@ -265,6 +316,11 @@ export default function DashboardPage() {
 
       setResultadoGeneracion(resultadoFormateado);
       await loadDashboard();
+
+      // 🆕 Actualizar contador del plan automáticamente
+      if ((window as any).__actualizarPlanGlobal) {
+        await (window as any).__actualizarPlanGlobal();
+      }
 
     setMostrarModalExito(true);
     } catch (error: any) {
@@ -301,6 +357,8 @@ export default function DashboardPage() {
   }
 
   return (
+    <PlanProvider>
+      <ActualizadorPlanAuto />
     <div className="min-h-screen bg-gray-50">
       {/* HEADER */}
       <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
@@ -433,6 +491,9 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-600">Último lote generado</p>
           </div>
         </div>
+
+        {/* 🆕 CONTADOR DE PLAN */}
+        <ContadorPlan />
 
         {/* STEPPER DE 6 PASOS */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
@@ -1010,12 +1071,27 @@ export default function DashboardPage() {
       onClose={() => setMostrarModalExito(false)}
       totalGenerados={resultadoGeneracion?.certificados_generados || 0}
       onDescargarZip={
-        resultadoGeneracion?.lote_id 
+        resultadoGeneracion?.lote_id
           ? () => descargarZip(resultadoGeneracion.lote_id)
           : undefined
       }
+      onNuevoLote={reiniciarFormulario}
     />
+
+      {/* 🆕 Modal de Límite de Plan */}
+      {errorLimite && (
+        <ModalLimitePlan
+          isOpen={mostrarModalLimite}
+          onClose={() => setMostrarModalLimite(false)}
+          mensaje={errorLimite.mensaje}
+          disponibles={errorLimite.disponibles}
+          solicitados={errorLimite.solicitados}
+          emitidos={errorLimite.emitidos}
+          limite={errorLimite.limite}
+        />
+      )}
     </div>
+    </PlanProvider>
   );
 }
 

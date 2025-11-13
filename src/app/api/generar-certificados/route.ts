@@ -152,6 +152,39 @@ export async function POST(req: NextRequest) {
       console.log('   Base de datos inicializada');
     }
 
+    // 4.5. 🆕 VALIDAR LÍMITE DEL PLAN antes de procesar
+    const { Empresa } = await import('@/lib/entities/Empresa');
+    const empresaRepo = AppDataSource.getRepository(Empresa);
+    const empresa = await empresaRepo.findOne({ where: { id: empresaId } });
+
+    if (!empresa) {
+      return NextResponse.json(
+        { success: false, error: 'Empresa no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    const certificadosDisponibles = empresa.limite_plan - empresa.certificados_emitidos;
+    const certificadosAGenerar = datosExcel.length;
+
+    console.log(`   📊 Plan actual: ${empresa.certificados_emitidos}/${empresa.limite_plan} certificados emitidos`);
+    console.log(`   📊 Disponibles: ${certificadosDisponibles} | Solicitados: ${certificadosAGenerar}`);
+
+    if (certificadosAGenerar > certificadosDisponibles) {
+      console.log(`   ❌ LÍMITE EXCEDIDO: Se requieren ${certificadosAGenerar} pero solo quedan ${certificadosDisponibles}`);
+      return NextResponse.json({
+        success: false,
+        error: 'Límite de plan excedido',
+        mensaje: `Tu plan permite ${empresa.limite_plan} certificados en total. Ya has emitido ${empresa.certificados_emitidos}. Solo tienes ${certificadosDisponibles} certificados disponibles, pero intentas generar ${certificadosAGenerar}.`,
+        disponibles: certificadosDisponibles,
+        solicitados: certificadosAGenerar,
+        emitidos: empresa.certificados_emitidos,
+        limite: empresa.limite_plan
+      }, { status: 403 });
+    }
+
+    console.log(`   ✅ Validación de plan aprobada`);
+
     // 5. Crear registro de lote
     const loteRepo = AppDataSource.getRepository(Lote);
     const nuevoLote = loteRepo.create({
@@ -186,6 +219,11 @@ export async function POST(req: NextRequest) {
     );
 
     console.log(`   ${certificadosGenerados.length} certificados generados`);
+
+    // 6.5. 🆕 INCREMENTAR CONTADOR DE CERTIFICADOS EMITIDOS
+    empresa.certificados_emitidos += certificadosGenerados.length;
+    await empresaRepo.save(empresa);
+    console.log(`   ✅ Contador actualizado: ${empresa.certificados_emitidos}/${empresa.limite_plan}`);
 
     // ✅ ZIP NO se crea ahora, se creará cuando presionen "Descargar ZIP"
     console.log('   ✅ Certificados guardados. Listo para descargar ZIP.');

@@ -29,7 +29,11 @@
       "Bash(node scripts/setup-firmas-ejemplo.mjs:*)",
       "Bash(./kill-ports.bat)",
       "Bash(node test-firmas.mjs:*)",
-      "Bash(node scripts/ejecutar-migracion-completa.mjs:*)"
+      "Bash(node scripts/ejecutar-migracion-completa.mjs:*)",
+      "Bash(\"C:\\Users\\Lucero\\Desktop\\frontend_vaxa\\src\\app\\api\\plan\\uso\\route.ts\")",
+      "Bash(git add:*)",
+      "Bash(del /f nul 2)",
+      "Bash($null)"
     ],
     "deny": [],
     "ask": []

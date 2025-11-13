@@ -517,7 +517,7 @@ static async generarCertificado(
 
         // 5. Guardar datos individuales del certificado (para compatibilidad y búsqueda)
         const datosEntidades: DatoCertificado[] = [];
-        
+
         for (const [campo, valor] of Object.entries(datosMapeados)) {
           const dato = datoCertificadoRepo.create({
             certificado_id: certificado.id,
@@ -525,6 +525,19 @@ static async generarCertificado(
             valor
           });
           datosEntidades.push(dato);
+        }
+
+        // 🆕 GUARDAR EL NOMBRE ORIGINAL DEL EXCEL como _nombre_override
+        const nombreDelExcel = datosMapeados['nombre'];
+        if (nombreDelExcel && nombreDelExcel.trim()) {
+          datosEntidades.push(
+            datoCertificadoRepo.create({
+              certificado_id: certificado.id,
+              campo: '_nombre_override',
+              valor: nombreDelExcel.trim()
+            })
+          );
+          console.log(`   📝 Nombre del Excel guardado: "${nombreDelExcel.trim()}"`);
         }
 
         await datoCertificadoRepo.save(datosEntidades);
