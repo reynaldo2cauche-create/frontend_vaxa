@@ -52,27 +52,41 @@ export default function ParticipantesPage() {
     setParticipante(null);
 
     try {
+      console.log(`🔍 Buscando: "${terminoBusqueda}"`);
       const response = await fetch(`/api/participantes/buscar?termino=${encodeURIComponent(terminoBusqueda)}`, {
         credentials: 'include'
       });
 
+      console.log('📡 Response status:', response.status);
+
       if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
+        console.error('❌ Error response:', errorData);
+
         if (response.status === 404) {
           setNoEncontrado(true);
+        } else if (response.status === 401) {
+          alert('No estás autenticado. Por favor inicia sesión nuevamente.');
+          router.push(`/${slug}/login`);
         } else {
-          throw new Error('Error al buscar participante');
+          alert(`Error: ${errorData.error || 'Error al buscar participante'}`);
         }
         return;
       }
 
       const data = await response.json();
-      if (data.success) {
+      console.log('✅ Data recibida:', data);
+
+      if (data.success && data.data) {
         setParticipante(data.data);
-        console.log('Participante encontrado:', data.data);
+        console.log('👤 Participante:', data.data);
+        console.log('📋 Certificados:', data.data.certificados?.length || 0);
+      } else {
+        alert('No se encontraron datos del participante');
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error al buscar participante');
+      console.error('❌ Error completo:', error);
+      alert(`Error al buscar participante: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     } finally {
       setBuscando(false);
     }
