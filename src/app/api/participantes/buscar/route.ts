@@ -3,109 +3,125 @@
 // Búsqueda global de participantes con historial
 // ============================================
 import { NextRequest, NextResponse } from 'next/server';
-import { getDataSource } from '@/lib/db';
+import { AppDataSource } from '@/lib/db';
 import { Participante } from '@/lib/entities/Participante';
 import { Certificado } from '@/lib/entities/Certificado';
+import { Usuario } from '@/lib/entities/Usuario';
 
 export async function GET(request: NextRequest) {
   try {
+    // Autenticación por cookies
+    if (!AppDataSource.isInitialized) {
+      await AppDataSource.initialize();
+    }
+
+    const usuarioId = request.cookies.get('usuario_id')?.value;
+    if (!usuarioId) {
+      return NextResponse.json(
+        { success: false, error: 'No autenticado' },
+        { status: 401 }
+      );
+    }
+
+    // Obtener empresa del usuario
+    const usuarioRepo = AppDataSource.getRepository(Usuario);
+    const usuario = await usuarioRepo.findOne({
+      where: { id: parseInt(usuarioId) },
+      relations: ['empresa']
+    });
+
+    if (!usuario || !usuario.empresa) {
+      return NextResponse.json(
+        { success: false, error: 'Usuario o empresa no encontrada' },
+        { status: 404 }
+      );
+    }
+
+    const empresaId = usuario.empresa.id;
+
     const searchParams = request.nextUrl.searchParams;
-    const empresaId = searchParams.get('empresaId');
-    const query = searchParams.get('query'); // Búsqueda por nombre, DNI o email
+    const termino = searchParams.get('termino'); // Búsqueda por nombre o DNI
 
-    if (!empresaId) {
+    if (!termino || termino.trim().length < 2) {
       return NextResponse.json(
-        { error: 'empresaId es requerido' },
+        { success: false, error: 'La búsqueda debe tener al menos 2 caracteres' },
         { status: 400 }
       );
     }
 
-    if (!query || query.trim().length < 2) {
-      return NextResponse.json(
-        { error: 'La búsqueda debe tener al menos 2 caracteres' },
-        { status: 400 }
-      );
-    }
+    const participanteRepo = AppDataSource.getRepository(Participante);
 
-    const dataSource = await getDataSource();
-    const participanteRepo = dataSource.getRepository(Participante);
-
-    // Búsqueda por nombre, DNI o email
+    // Búsqueda por nombre o DNI
     const participantes = await participanteRepo
       .createQueryBuilder('p')
-      .where('p.empresa_id = :empresaId', { empresaId: parseInt(empresaId) })
+      .where('p.empresa_id = :empresaId', { empresaId })
       .andWhere(
-        '(p.nombres LIKE :query OR p.apellidos LIKE :query OR p.numero_documento LIKE :query OR p.correo_electronico LIKE :query)',
-        { query: `%${query}%` }
+        '(p.nombres LIKE :termino OR p.apellidos LIKE :termino OR p.numero_documento LIKE :termino OR p.correo_electronico LIKE :termino)',
+        { termino: `%${termino}%` }
       )
       .orderBy('p.created_at', 'DESC')
-      .take(50) // Límite de resultados
+      .take(50)
       .getMany();
 
-    // Para cada participante, obtener su historial de certificados CON RELACIONES Y DATOS
-    const participantesConHistorial = await Promise.all(
-      participantes.map(async (participante) => {
-        const certificadoRepo = dataSource.getRepository(Certificado);
+    if (participantes.length === 0) {
+      return NextResponse.json(
+        { success: false, error: 'No se encontraron participantes' },
+        { status: 404 }
+      );
+    }
 
-        const certificados = await certificadoRepo
-          .createQueryBuilder('c')
-          .leftJoinAndSelect('c.lote', 'l')
-          .leftJoinAndSelect('c.participante', 'p')
-          .leftJoinAndSelect('c.datos', 'd') // 🆕 Incluir datos del certificado
-          .where('c.participante_id = :participanteId', { participanteId: participante.id })
-          .orderBy('c.fecha_emision', 'DESC')
-          .getMany();
+    // Si solo hay un participante, devolver directamente su información
+    const participante = participantes[0];
+    const certificadoRepo = AppDataSource.getRepository(Certificado);
 
-        console.log(`✅ Participante ${participante.id} - Certificados encontrados:`, certificados.length);
-        certificados.forEach(cert => {
-          console.log(`   - Certificado ${cert.id}: código = "${cert.codigo}", lote = ${cert.lote?.id}`);
-        });
+    const certificados = await certificadoRepo
+      .createQueryBuilder('c')
+      .leftJoinAndSelect('c.lote', 'l')
+      .leftJoinAndSelect('c.datos', 'd')
+      .where('c.participante_id = :participanteId', { participanteId: participante.id })
+      .orderBy('c.fecha_emision', 'DESC')
+      .getMany();
 
-        return {
-          id: participante.id,
-          termino: participante.termino,
-          nombres: participante.nombres,
-          apellidos: participante.apellidos,
-          numero_documento: participante.numero_documento,
-          correo_electronico: participante.correo_electronico,
-          total_certificados: certificados.length,
-          certificados: certificados.map(cert => {
-            // 🆕 Buscar nombre override si existe
-            const nombreOverride = cert.datos?.find(d => d.campo === '_nombre_override');
-            const nombreMostrar = nombreOverride?.valor ||
-              [participante.termino, participante.nombres].filter(Boolean).join(' ').trim();
+    console.log(`🔍 Participante encontrado: ${participante.nombres} ${participante.apellidos}`);
+    console.log(`📋 Certificados: ${certificados.length}`);
 
-            return {
-              id: cert.id,
-              codigo_validacion: cert.codigo || 'SIN-CODIGO',
-              nombre_actual: nombreMostrar, // 🆕 Nombre que se muestra en el certificado
-              nombre_original: [participante.termino, participante.nombres].filter(Boolean).join(' ').trim(), // 🆕 Nombre del participante
-              tiene_override: !!nombreOverride, // 🆕 Indica si tiene nombre personalizado
-              curso: cert.lote?.curso || 'Sin curso',
-              tipo_documento: cert.lote?.tipo_documento || 'Certificado',
-              fecha_emision: cert.fecha_emision,
-              fecha_inicio: cert.fecha_inicio,
-              fecha_fin: cert.fecha_fin,
-              horas_academicas: cert.horas_academicas,
-              ponente: cert.ponente,
-              lote_id: cert.lote?.id,
-              lote_nombre: cert.lote?.nombre,
-              archivo_url: cert.archivo_url
-            };
-          })
-        };
-      })
-    );
+    const certificadosFormateados = certificados.map(cert => {
+      const nombreOverride = cert.datos?.find(d => d.campo === '_nombre_override');
+      const nombreCompleto = [participante.termino, participante.nombres, participante.apellidos]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+
+      return {
+        id: cert.id,
+        codigo_unico: cert.codigo || 'SIN-CODIGO',
+        nombre_actual: nombreOverride?.valor || nombreCompleto,
+        tiene_override: !!nombreOverride,
+        tipo_documento: cert.lote?.tipo_documento || 'Certificado',
+        curso: cert.lote?.curso || 'Sin curso',
+        fecha_emision: cert.fecha_emision,
+        pdf_url: cert.archivo_url,
+        lote_id: cert.lote?.id
+      };
+    });
 
     return NextResponse.json({
-      participantes: participantesConHistorial,
-      total: participantesConHistorial.length
+      success: true,
+      data: {
+        id: participante.id,
+        dni: participante.numero_documento,
+        nombre: [participante.nombres, participante.apellidos].filter(Boolean).join(' '),
+        email: participante.correo_electronico,
+        telefono: participante.telefono || '',
+        empresa_id: participante.empresa_id,
+        certificados: certificadosFormateados
+      }
     });
 
   } catch (error) {
-    console.error('Error al buscar participantes:', error);
+    console.error('❌ Error al buscar participantes:', error);
     return NextResponse.json(
-      { error: 'Error al buscar participantes' },
+      { success: false, error: 'Error al buscar participantes' },
       { status: 500 }
     );
   }
