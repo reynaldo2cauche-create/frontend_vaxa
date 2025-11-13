@@ -34,7 +34,7 @@ import type { Logo } from '@/lib/entities/Logo';
 import ModalExitoCertificados from '@/components/ModalExitoCertificado/route';
 import ModalLimitePlan from '@/components/ModalLimitePlan/route';
 import { PlanProvider } from '@/contexts/PlanContext';
-import ContadorPlan from './ContadorPlan';
+import { ContadorPlan } from './ContadorPlan';
 import { ActualizadorPlanAuto } from './ActualizadorPlanAuto';
 
 // ✅ INTERFACE UNIFICADA para firmas
