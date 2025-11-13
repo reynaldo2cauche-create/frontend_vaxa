@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Search, User, FileText, Calendar, Download, Eye, Loader2, ArrowLeft } from 'lucide-react';
 
@@ -144,7 +144,7 @@ export default function ParticipantesPage() {
               Participante no encontrado
             </h3>
             <p className="text-yellow-700">
-              No se encontró ningún participante con el DNI o nombre: <strong>"{terminoBusqueda}"</strong>
+              No se encontro ningun participante con el DNI o nombre: <strong>"{terminoBusqueda}"</strong>
             </p>
           </div>
         )}
@@ -156,7 +156,7 @@ export default function ParticipantesPage() {
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
               <div className="flex items-center gap-3 mb-6">
                 <User className="w-6 h-6 text-green-600" />
-                <h2 className="text-2xl font-bold text-gray-800">Información del Participante</h2>
+                <h2 className="text-2xl font-bold text-gray-800">Informacion del Participante</h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -176,7 +176,7 @@ export default function ParticipantesPage() {
                 )}
                 {participante.telefono && (
                   <div>
-                    <p className="text-sm text-gray-600 mb-1">Teléfono</p>
+                    <p className="text-sm text-gray-600 mb-1">Telefono</p>
                     <p className="text-lg font-semibold text-gray-900">{participante.telefono}</p>
                   </div>
                 )}
@@ -198,7 +198,7 @@ export default function ParticipantesPage() {
                 <div className="text-center py-12">
                   <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600">
-                    Este participante aún no tiene certificados generados
+                    Este participante aun no tiene certificados generados
                   </p>
                 </div>
               ) : (
@@ -210,7 +210,7 @@ export default function ParticipantesPage() {
                     >
                       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-center">
                         <div className="md:col-span-2">
-                          <p className="text-sm text-gray-600 mb-1">Código Único</p>
+                          <p className="text-sm text-gray-600 mb-1">Codigo Unico</p>
                           <p className="text-lg font-bold text-blue-600">{cert.codigo_unico}</p>
                         </div>
 
@@ -249,7 +249,7 @@ export default function ParticipantesPage() {
                         <div className="flex items-center gap-2 text-sm text-gray-600">
                           <Calendar className="w-4 h-4" />
                           <span>Generado el: {new Date(cert.fecha_emision).toLocaleDateString('es-ES')}</span>
-                          <span className="mx-2">"</span>
+                          <span className="mx-2">|</span>
                           <span>Lote #{cert.lote_id}</span>
                         </div>
                       </div>
