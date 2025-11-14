@@ -301,7 +301,7 @@ const guardarYRegenerar = async (certificadoId: number) => {
               Participante no encontrado
             </h3>
             <p className="text-yellow-700">
-              No se encontro ningun participante con el DNI o nombre: <strong>"{terminoBusqueda}"</strong>
+              No se encontro ningun participante con el DNI o nombre: <strong>&quot;{terminoBusqueda}&quot;</strong>
             </p>
           </div>
         )}

@@ -279,7 +279,7 @@ export default function CertificadoPreview({
                     maxWidth: '800px'
                   }}
                 >
-                  "{cursoMostrar}"
+                  &quot;{cursoMostrar}&quot;
                 </div>
               )}
             </div>

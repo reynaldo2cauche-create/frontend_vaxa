@@ -313,15 +313,22 @@ export class CertificadoService {
 
   /**
    * Genera un certificado individual con POSICIONES FIJAS
+   * @param empresaId - ID de la empresa
+   * @param datos - Datos del certificado
+   * @param loteId - ID del lote (opcional)
+   * @param textoEstatico - Texto estático personalizado (opcional)
+   * @param firmasIds - IDs de las firmas digitales (opcional)
+   * @param codigoExistente - Código existente para regeneración (opcional)
+   *                          Si se proporciona, se reutiliza el código y QR existentes
+   *                          Si no se proporciona, se genera un nuevo código único
    */
-// Reemplaza SOLO la función generarCertificado en tu CertificadoService.ts
-
 static async generarCertificado(
   empresaId: number,
   datos: DatosCertificado,
   loteId?: number,
   textoEstatico?: string,
-  firmasIds?: number[]
+  firmasIds?: number[],
+  codigoExistente?: string
 ): Promise<CertificadoGenerado> {
   try {
     // 1. Obtener plantilla (fondo y logo)
@@ -374,8 +381,14 @@ static async generarCertificado(
       }
     }
 
-    // 3. Generar código único
-    const codigo = this.generarCodigo(empresaId);
+    // 3. Usar código existente o generar uno nuevo
+    const codigo = codigoExistente || this.generarCodigo(empresaId);
+
+    if (codigoExistente) {
+      console.log(`♻️  Reutilizando código existente: ${codigoExistente}`);
+    } else {
+      console.log(`🆕 Generando nuevo código: ${codigo}`);
+    }
 
     // 4. Generar QR
     const qrDataURL = await QRService.generarQRParaCertificado(
@@ -424,7 +437,7 @@ static async generarCertificado(
       outputPath
     });
 
-    console.log(`Certificado PDF generado: ${codigo}`);
+    console.log(`✅ Certificado PDF generado: ${codigo}`);
 
     // 8. Construir URL relativa
     const rutaRelativa = `/generated/${empresaId}/${loteId ? `lote-${loteId}` : 'individual'}/${filename}`;
@@ -889,20 +902,21 @@ static async generarCertificado(
     });
     const firmasIds = certificadoFirmas.map(cf => cf.firmaId);
 
-    // 5. Regenerar certificado
+    // 5. Regenerar certificado CON EL MISMO CÓDIGO
     const certGenerado = await this.generarCertificado(
       certificado.empresa_id,
       datosMapeados,
       certificado.lote_id ?? undefined,
       textoEstatico,
-      firmasIds.length > 0 ? firmasIds : undefined
+      firmasIds.length > 0 ? firmasIds : undefined,
+      certificado.codigo // 🔑 Pasar código existente para mantenerlo
     );
 
-    // 6. Actualizar URL del archivo en BD
+    // 6. Actualizar URL del archivo en BD (el código sigue siendo el mismo)
     certificado.archivo_url = certGenerado.rutaArchivo;
     await certificadoRepo.save(certificado);
 
-    console.log(`   ✅ Certificado regenerado exitosamente`);
+    console.log(`   ✅ Certificado regenerado exitosamente con código original: ${certificado.codigo}`);
 
     return certGenerado;
   } catch (error) {
