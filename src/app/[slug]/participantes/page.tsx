@@ -38,10 +38,21 @@ export default function ParticipantesPage() {
   const [empresaId, setEmpresaId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Estados para edición
+  // Estados para edición de certificados
   const [editandoCertificado, setEditandoCertificado] = useState<number | null>(null);
   const [nombreEditado, setNombreEditado] = useState('');
   const [regenerando, setRegenerando] = useState<number | null>(null);
+
+  // 🆕 Estados para edición de participante
+  const [editandoParticipante, setEditandoParticipante] = useState<number | null>(null);
+  const [participanteEditado, setParticipanteEditado] = useState({
+    nombres: '',
+    apellidos: '',
+    email: '',
+    telefono: '',
+    dni: ''
+  });
+  const [guardandoParticipante, setGuardandoParticipante] = useState(false);
 
   // Obtener empresaId desde el API (igual que el dashboard)
   useEffect(() => {
@@ -136,6 +147,94 @@ export default function ParticipantesPage() {
   const cancelarEdicion = () => {
     setEditandoCertificado(null);
     setNombreEditado('');
+  };
+
+  // 🆕 Iniciar edición de participante
+  const iniciarEdicionParticipante = (participante: Participante) => {
+    setEditandoParticipante(participante.id);
+    // Separar nombre completo en nombres y apellidos
+    const nombreCompleto = participante.nombre.split(' ');
+    const apellidos = nombreCompleto.slice(-2).join(' '); // Últimas 2 palabras como apellidos
+    const nombres = nombreCompleto.slice(0, -2).join(' ') || nombreCompleto[0]; // El resto como nombres
+
+    setParticipanteEditado({
+      nombres: nombres,
+      apellidos: apellidos,
+      email: participante.email || '',
+      telefono: participante.telefono || '',
+      dni: participante.dni
+    });
+  };
+
+  // 🆕 Cancelar edición de participante
+  const cancelarEdicionParticipante = () => {
+    setEditandoParticipante(null);
+    setParticipanteEditado({
+      nombres: '',
+      apellidos: '',
+      email: '',
+      telefono: '',
+      dni: ''
+    });
+  };
+
+  // 🆕 Guardar cambios del participante (SIN regenerar certificados)
+  const guardarParticipante = async (participanteId: number) => {
+    if (!participanteEditado.nombres.trim()) {
+      alert('El nombre no puede estar vacío');
+      return;
+    }
+
+    setGuardandoParticipante(true);
+
+    try {
+      console.log(`💾 Guardando datos del participante ${participanteId}...`);
+
+      const response = await fetch(`/api/participantes/${slug}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          participante_id: participanteId,
+          nombres: participanteEditado.nombres,
+          apellidos: participanteEditado.apellidos,
+          correo_electronico: participanteEditado.email || null,
+          telefono: participanteEditado.telefono || null
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Error al guardar los datos');
+      }
+
+      console.log('✅ Datos del participante guardados exitosamente');
+
+      // Actualizar la vista local
+      setParticipantes(prevParticipantes =>
+        prevParticipantes.map(p =>
+          p.id === participanteId
+            ? {
+                ...p,
+                nombre: `${participanteEditado.nombres} ${participanteEditado.apellidos}`.trim(),
+                email: participanteEditado.email,
+                telefono: participanteEditado.telefono
+              }
+            : p
+        )
+      );
+
+      setEditandoParticipante(null);
+      alert('✅ Datos del participante actualizados correctamente.\n\nNOTA: Los certificados ya emitidos mantendrán el nombre original. Para cambiar el nombre en un certificado específico, edítalo individualmente.');
+
+    } catch (error) {
+      console.error('❌ Error:', error);
+      alert(error instanceof Error ? error.message : 'Error al guardar los datos');
+    } finally {
+      setGuardandoParticipante(false);
+    }
   };
 
 const guardarYRegenerar = async (certificadoId: number) => {
@@ -319,33 +418,145 @@ const guardarYRegenerar = async (certificadoId: number) => {
               <div key={participante.id} className="space-y-6 pb-8 border-b-4 border-gray-200 last:border-b-0">
                 {/* INFO DEL PARTICIPANTE */}
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <User className="w-6 h-6 text-green-600" />
-                    <h2 className="text-2xl font-bold text-gray-800">Informacion del Participante</h2>
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                      <User className="w-6 h-6 text-green-600" />
+                      <h2 className="text-2xl font-bold text-gray-800">Informacion del Participante</h2>
+                    </div>
+                    {editandoParticipante === participante.id ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => guardarParticipante(participante.id)}
+                          disabled={guardandoParticipante}
+                          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {guardandoParticipante ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Guardando...
+                            </>
+                          ) : (
+                            <>
+                              <Save className="w-4 h-4" />
+                              Guardar
+                            </>
+                          )}
+                        </button>
+                        <button
+                          onClick={cancelarEdicionParticipante}
+                          disabled={guardandoParticipante}
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => iniciarEdicionParticipante(participante)}
+                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Editar Datos
+                      </button>
+                    )}
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">Nombre Completo</p>
-                      <p className="text-lg font-semibold text-gray-900">{participante.nombre}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-1">DNI</p>
-                      <p className="text-lg font-semibold text-gray-900">{participante.dni}</p>
-                    </div>
-                    {participante.email && (
+                  {editandoParticipante === participante.id ? (
+                    // 🆕 Modo Edición
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">Email</p>
-                        <p className="text-lg font-semibold text-gray-900">{participante.email}</p>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Nombres *
+                        </label>
+                        <input
+                          type="text"
+                          value={participanteEditado.nombres}
+                          onChange={(e) => setParticipanteEditado({ ...participanteEditado, nombres: e.target.value })}
+                          className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Nombres"
+                        />
                       </div>
-                    )}
-                    {participante.telefono && (
                       <div>
-                        <p className="text-sm text-gray-600 mb-1">Telefono</p>
-                        <p className="text-lg font-semibold text-gray-900">{participante.telefono}</p>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Apellidos *
+                        </label>
+                        <input
+                          type="text"
+                          value={participanteEditado.apellidos}
+                          onChange={(e) => setParticipanteEditado({ ...participanteEditado, apellidos: e.target.value })}
+                          className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Apellidos"
+                        />
                       </div>
-                    )}
-                  </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          DNI (no editable)
+                        </label>
+                        <input
+                          type="text"
+                          value={participanteEditado.dni}
+                          disabled
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Email
+                        </label>
+                        <input
+                          type="email"
+                          value={participanteEditado.email}
+                          onChange={(e) => setParticipanteEditado({ ...participanteEditado, email: e.target.value })}
+                          className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="correo@ejemplo.com"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Teléfono
+                        </label>
+                        <input
+                          type="tel"
+                          value={participanteEditado.telefono}
+                          onChange={(e) => setParticipanteEditado({ ...participanteEditado, telefono: e.target.value })}
+                          className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="999 999 999"
+                        />
+                      </div>
+                      <div className="md:col-span-2">
+                        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                          <p className="text-sm text-yellow-800">
+                            ⚠️ <strong>Importante:</strong> Los cambios solo afectan los datos del participante. Los certificados ya generados mantendrán el nombre original.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    // Vista Normal
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">Nombre Completo</p>
+                        <p className="text-lg font-semibold text-gray-900">{participante.nombre}</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600 mb-1">DNI</p>
+                        <p className="text-lg font-semibold text-gray-900">{participante.dni}</p>
+                      </div>
+                      {participante.email && (
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Email</p>
+                          <p className="text-lg font-semibold text-gray-900">{participante.email}</p>
+                        </div>
+                      )}
+                      {participante.telefono && (
+                        <div>
+                          <p className="text-sm text-gray-600 mb-1">Telefono</p>
+                          <p className="text-lg font-semibold text-gray-900">{participante.telefono}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* CERTIFICADOS */}
