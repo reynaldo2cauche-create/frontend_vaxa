@@ -697,6 +697,14 @@ export default function DashboardPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Plantilla del Certificado <span className="text-red-500">*</span>
                   </label>
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                    <p className="text-xs text-blue-800 font-medium">
+                      📐 <strong>Medidas recomendadas:</strong> 1900 x 1345 píxeles (formato horizontal A4)
+                    </p>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Formato: PNG o JPG | Resolución: 300 DPI para máxima calidad
+                    </p>
+                  </div>
                   <PlantillaUpload
                     empresaId={empresa.id}
                     onPlantillaSubida={(url) => {
@@ -710,6 +718,14 @@ export default function DashboardPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Logos (opcional)
                   </label>
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+                    <p className="text-xs text-amber-800 font-medium">
+                      📐 <strong>Medidas recomendadas:</strong> 300 x 300 píxeles (cuadrado) o 400 x 200 píxeles (rectangular)
+                    </p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      Formato: PNG con fondo transparente | Peso máximo: 2MB por logo
+                    </p>
+                  </div>
                   <LogosUpload
                     empresaId={empresa.id}
                     onLogosActualizados={(logosActualizados) => {
