@@ -510,7 +510,7 @@ export default function ParticipantesLotePage() {
                     Código
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    Participante
+                    Nombre en Certificado
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Documento
@@ -566,9 +566,16 @@ export default function ParticipantesLotePage() {
                           </div>
                         ) : (
                           <div>
-                            <p className="text-sm font-semibold text-gray-900">
-                              {participante.nombre_completo}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-semibold text-gray-900">
+                                {participante.nombre_completo}
+                              </p>
+                              {participante.datos_adicionales['_nombre_override'] && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
+                                  Personalizado
+                                </span>
+                              )}
+                            </div>
                             <p className="text-xs text-gray-500 mt-0.5">
                               {participante.curso}
                             </p>
@@ -762,13 +769,13 @@ export default function ParticipantesLotePage() {
           <div className="flex items-start gap-3">
             <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
             <div className="text-sm text-blue-800">
-              <p className="font-semibold mb-1">💡 Consejos:</p>
+              <p className="font-semibold mb-1">💡 Información importante:</p>
               <ul className="list-disc list-inside space-y-1 text-blue-700">
-                <li>✏️ El botón de editar permite cambiar el nombre del <strong>certificado específico</strong> (no afecta al participante en otros certificados)</li>
-                <li>👁️ Usa el ícono de vista previa para ver el certificado en tiempo real</li>
-                <li>💾 Al guardar, se regenera automáticamente SOLO ese certificado con el nuevo nombre</li>
-                <li>📥 Puedes descargar certificados individuales con el ícono de descarga</li>
-                <li>ℹ️ Para editar los datos del participante en todos sus certificados, usa la vista de &quot;Participantes&quot;</li>
+                <li><strong>Nombre en Certificado:</strong> Es el nombre que aparece en el PDF. Puede ser diferente al nombre real del participante.</li>
+                <li>✏️ <strong>Editar:</strong> Cambia solo el nombre de ESE certificado específico (no afecta otros certificados del mismo participante)</li>
+                <li>💾 <strong>Guardar:</strong> Regenera automáticamente SOLO ese certificado con el nuevo nombre</li>
+                <li>🟣 <strong>Badge &quot;Personalizado&quot;:</strong> Indica que el certificado tiene un nombre diferente al del participante original</li>
+                <li>👤 <strong>Datos del participante:</strong> Para editar DNI, email, teléfono, etc. usa la vista de &quot;Participantes&quot;</li>
               </ul>
             </div>
           </div>
