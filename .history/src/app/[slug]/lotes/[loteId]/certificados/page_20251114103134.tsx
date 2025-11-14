@@ -16,8 +16,7 @@ import {
   XCircle,
   FileText,
   Filter,
-  Eye,
-  RefreshCw
+  Eye
 } from 'lucide-react';
 
 interface Participante {
@@ -37,8 +36,6 @@ interface Participante {
   estado: 'activo' | 'revocado';
   archivo_url: string;
   datos_adicionales: Record<string, string>;
-  nombre_actual?: string;
-  tiene_override?: boolean;
 }
 
 interface EditingParticipant {
@@ -49,6 +46,7 @@ interface EditingParticipant {
   correo_electronico: string;
 }
 
+// Componente para el modal de previsualización
 function PdfPreviewModal({ 
   isOpen, 
   onClose, 
@@ -62,6 +60,7 @@ function PdfPreviewModal({
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+   
 
   const pdfUrl = `/api/certificados/${certificadoId}/preview`;
 
@@ -173,21 +172,20 @@ export default function ParticipantesLotePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState<'todos' | 'activo' | 'revocado'>('todos');
 
+  // Edición
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editData, setEditData] = useState<EditingParticipant | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // 🆕 Estados para edición de nombre en certificado
-  const [editandoCertificado, setEditandoCertificado] = useState<number | null>(null);
-  const [nombreEditado, setNombreEditado] = useState('');
-  const [regenerando, setRegenerando] = useState<number | null>(null);
-
+  // Ordenamiento
   const [sortField, setSortField] = useState<'nombre' | 'documento' | 'fecha'>('nombre');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
+  // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
 
+  // Previsualización PDF
   const [previewPdf, setPreviewPdf] = useState<{
     isOpen: boolean;
     certificadoId: number;
@@ -204,7 +202,7 @@ export default function ParticipantesLotePage() {
 
   useEffect(() => {
     filterAndSortParticipantes();
-    setCurrentPage(1);
+    setCurrentPage(1); // Resetear a la primera página cuando cambian los filtros
   }, [participantes, searchTerm, estadoFiltro, sortField, sortOrder]);
 
   const loadParticipantes = async () => {
@@ -311,87 +309,6 @@ export default function ParticipantesLotePage() {
     }
   };
 
-  // 🆕 Funciones para edición de certificado (igual que en participantes)
-  const iniciarEdicionCertificado = (participante: Participante) => {
-    setEditandoCertificado(participante.certificado_id);
-    setNombreEditado(participante.nombre_actual || participante.nombre_completo);
-  };
-
-  const cancelarEdicionCertificado = () => {
-    setEditandoCertificado(null);
-    setNombreEditado('');
-  };
-
-  const guardarYRegenerar = async (certificadoId: number) => {
-    if (!nombreEditado.trim()) {
-      alert('El nombre no puede estar vacío');
-      return;
-    }
-
-    setRegenerando(certificadoId);
-
-    try {
-      console.log(`✏️ Guardando nombre para certificado ${certificadoId}: "${nombreEditado}"`);
-
-      const editResponse = await fetch(`/api/certificados/${certificadoId}/editar-nombre`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          nuevoNombre: nombreEditado
-        })
-      });
-
-      if (!editResponse.ok) {
-        const error = await editResponse.json();
-        throw new Error(error.error || 'Error al guardar el nombre');
-      }
-
-      const editResult = await editResponse.json();
-      console.log('✅ Nombre guardado:', editResult);
-
-      console.log(`🔄 Regenerando certificado ${certificadoId}...`);
-      
-      const regenResponse = await fetch(`/api/certificados/${certificadoId}/regenerar`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-
-      if (!regenResponse.ok) {
-        const error = await regenResponse.json();
-        throw new Error(error.error || 'Error al regenerar certificado');
-      }
-
-      const regenResult = await regenResponse.json();
-      console.log('✅ Certificado regenerado:', regenResult);
-
-      setParticipantes(prevParticipantes =>
-        prevParticipantes.map(p =>
-          p.certificado_id === certificadoId
-            ? { 
-                ...p, 
-                nombre_actual: nombreEditado, 
-                tiene_override: true,
-                archivo_url: regenResult.data.rutaArchivo || p.archivo_url
-              }
-            : p
-        )
-      );
-
-      setEditandoCertificado(null);
-      setNombreEditado('');
-      alert('✅ Certificado actualizado y regenerado exitosamente');
-
-    } catch (error) {
-      console.error('❌ Error:', error);
-      alert(error instanceof Error ? error.message : 'Error al procesar el certificado');
-    } finally {
-      setRegenerando(null);
-    }
-  };
-
   const downloadCertificate = async (certificadoId: number, codigo: string) => {
     try {
       const res = await fetch(`/api/certificados/${certificadoId}/descargar`, {
@@ -415,6 +332,7 @@ export default function ParticipantesLotePage() {
     }
   };
 
+  // Función para previsualizar certificado
   const previewCertificate = (certificadoId: number, codigo: string) => {
     setPreviewPdf({
       isOpen: true,
@@ -446,6 +364,7 @@ export default function ParticipantesLotePage() {
     revocados: participantes.filter(p => p.estado === 'revocado').length
   };
 
+  // Calcular paginación
   const totalPages = Math.ceil(filteredParticipantes.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -453,6 +372,7 @@ export default function ParticipantesLotePage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Modal de previsualización PDF */}
       <PdfPreviewModal
         isOpen={previewPdf.isOpen}
         onClose={() => setPreviewPdf({ isOpen: false, certificadoId: 0, codigo: '' })}
@@ -568,9 +488,14 @@ export default function ParticipantesLotePage() {
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Código
                   </th>
-                  
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                    Nombre en Certificado
+                    Participante
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Documento
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                    Correo
                   </th>
                   <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                     Estado
@@ -583,8 +508,7 @@ export default function ParticipantesLotePage() {
               <tbody className="divide-y divide-gray-200">
                 {currentParticipantes.map((participante, index) => {
                   const isEditing = editingId === participante.participante_id;
-                  const isEditingCert = editandoCertificado === participante.certificado_id;
-                  const globalIndex = startIndex + index + 1;
+                  const globalIndex = startIndex + index + 1; // Índice global considerando la paginación
 
                   return (
                     <tr
@@ -601,67 +525,72 @@ export default function ParticipantesLotePage() {
                           <FileText className="w-3 h-3" />
                           {participante.codigo}
                         </span>
-                        {participante.tiene_override && (
-                          <span className="block mt-1 text-xs text-purple-600">
-                            ✨ Personalizado
-                          </span>
-                        )}
                       </td>
-                  
-
+                      
                       <td className="px-6 py-4">
-                        {isEditingCert ? (
+                        {isEditing && editData ? (
                           <div className="space-y-2">
                             <input
                               type="text"
-                              value={nombreEditado}
-                              onChange={(e) => setNombreEditado(e.target.value)}
-                              className="w-full px-3 py-2 border-2 border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                              placeholder="Nombre completo..."
-                              disabled={regenerando === participante.certificado_id}
+                              value={editData.termino}
+                              onChange={(e) => setEditData({ ...editData, termino: e.target.value })}
+                              placeholder="Sr./Sra./Ing."
+                              className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
                             />
-                            <div className="flex gap-2">
-                              <button
-                                onClick={() => guardarYRegenerar(participante.certificado_id)}
-                                disabled={regenerando === participante.certificado_id}
-                                className="flex items-center gap-1 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-xs font-medium disabled:opacity-50"
-                              >
-                                {regenerando === participante.certificado_id ? (
-                                  <>
-                                    <Loader2 className="w-3 h-3 animate-spin" />
-                                    Regenerando...
-                                  </>
-                                ) : (
-                                  <>
-                                    <RefreshCw className="w-3 h-3" />
-                                    Guardar y Regenerar
-                                  </>
-                                )}
-                              </button>
-                              <button
-                                onClick={cancelarEdicionCertificado}
-                                disabled={regenerando === participante.certificado_id}
-                                className="px-3 py-1.5 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-xs"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
+                            <input
+                              type="text"
+                              value={editData.nombres}
+                              onChange={(e) => setEditData({ ...editData, nombres: e.target.value })}
+                              placeholder="Nombres"
+                              className="w-full px-3 py-2 text-sm font-medium border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
+                            />
+                            <input
+                              type="text"
+                              value={editData.apellidos}
+                              onChange={(e) => setEditData({ ...editData, apellidos: e.target.value })}
+                              placeholder="Apellidos"
+                              className="w-full px-3 py-2 text-sm font-medium border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
+                            />
                           </div>
                         ) : (
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="text-sm font-semibold text-gray-900">
-                                {participante.nombre_actual || participante.nombre_completo}<br/>
-                               <span className="block mt-1 text-xs text-purple-600"> DNI: {participante.numero_documento}</span>
-                              </p>
-                            </div>
-                            <button
-                              onClick={() => iniciarEdicionCertificado(participante)}
-                              className="flex items-center gap-1 px-2 py-1 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors text-xs"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                              Editar
-                            </button>
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {participante.nombre_completo}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {participante.curso}
+                            </p>
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex flex-col">
+                          <span className="text-xs font-medium text-gray-500 uppercase">
+                            {participante.tipo_documento}
+                          </span>
+                          <span className="text-sm font-semibold text-gray-900 mt-0.5">
+                            {participante.numero_documento}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        {isEditing && editData ? (
+                          <input
+                            type="email"
+                            value={editData.correo_electronico}
+                            onChange={(e) => setEditData({ ...editData, correo_electronico: e.target.value })}
+                            placeholder="correo@ejemplo.com"
+                            className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          />
+                        ) : (
+                          <div className="text-sm">
+                            {participante.correo_electronico ? (
+                              <span className="text-gray-700">{participante.correo_electronico}</span>
+                            ) : (
+                              <span className="text-gray-400 italic text-xs">Sin correo</span>
+                            )}
                           </div>
                         )}
                       </td>
@@ -706,7 +635,13 @@ export default function ParticipantesLotePage() {
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-1.5">
-                           
+                            <button
+                              onClick={() => startEdit(participante)}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all hover:shadow-sm"
+                              title="Editar participante"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => previewCertificate(participante.certificado_id, participante.codigo)}
                               className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-all hover:shadow-sm"
@@ -746,6 +681,7 @@ export default function ParticipantesLotePage() {
           )}
         </div>
 
+        {/* Paginación */}
         {totalPages > 1 && (
           <div className="mt-6 bg-white rounded-2xl shadow-sm border border-gray-200 p-4">
             <div className="flex items-center justify-between">
@@ -820,11 +756,11 @@ export default function ParticipantesLotePage() {
             <div className="text-sm text-blue-800">
               <p className="font-semibold mb-1">💡 Consejos:</p>
               <ul className="list-disc list-inside space-y-1 text-blue-700">
-                <li>Edita los <strong>datos del participante</strong> con el botón azul (afecta registros futuros)</li>
-                <li>Edita el <strong>nombre en el certificado</strong> directamente en la columna correspondiente</li>
-                <li>Al editar el nombre del certificado, se regenerará automáticamente el PDF</li>
-                <li>Usa el ícono de vista previa (👁️) para ver el certificado actualizado</li>
-                <li>Los certificados con nombre personalizado muestran un indicador ✨</li>
+                <li>Haz clic en el ícono de editar para modificar los datos del participante</li>
+                <li>Usa el ícono de vista previa (👁️) para generar y ver el certificado en tiempo real</li>
+                <li>Los cambios se guardan inmediatamente</li>
+                <li>La vista previa genera el PDF dinámicamente con los datos actualizados</li>
+                <li>Puedes descargar certificados individuales con el ícono de descarga</li>
               </ul>
             </div>
           </div>

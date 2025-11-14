@@ -3,7 +3,17 @@
     "allow": [
       "Bash(git commit -m \"$(cat <<''EOF''\nAgregar página de participantes y menú de navegación\n\n✅ Página de Búsqueda de Participantes\n- Búsqueda por DNI o nombre completo\n- Visualización de información del participante\n- Lista de todos los certificados del participante\n- Botones para ver y descargar certificados\n- Diseño responsive y profesional\n\n✅ Menú de Navegación en Dashboard\n- Botón \"Participantes\" para buscar participantes\n- Botón \"Historial\" para ver lotes generados\n- Navegación intuitiva desde el header\n- Diseño consistente con el sistema\n\n🎨 Interfaz mejorada con iconos lucide-react\n📊 Integración con APIs ya existentes\n🔄 Navegación fluida entre secciones\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(cat:*)",
+      "Bash(where:*)",
+      "Bash(test:*)",
+      "Bash(\"C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\":*)",
+      "Bash(\"C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -u root -padmin vaxa -e \"UPDATE certificados c LEFT JOIN dato_certificado dc ON dc.certificado_id = c.id AND dc.campo = ''_nombre_override'' SET c.nombre_override = dc.valor WHERE c.nombre_override IS NULL AND dc.valor IS NOT NULL AND dc.valor != '''';\")",
+      "Bash(\"C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -u root -padmin vaxa -e \"SHOW TABLES LIKE ''%dato%'';\")",
+      "Bash(\"C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -u root -padmin vaxa -e \"SELECT COUNT(*) as certificados_sin_participante FROM certificados WHERE participante_id IS NULL;\")"
     ],
     "deny": [],
     "ask": []

@@ -652,7 +652,7 @@ export default function ParticipantesLotePage() {
                             <div>
                               <p className="text-sm font-semibold text-gray-900">
                                 {participante.nombre_actual || participante.nombre_completo}<br/>
-                               <span className="block mt-1 text-xs text-purple-600"> DNI: {participante.numero_documento}</span>
+                               <span className="block mt-1 text-xs text-purple-600"> DNI:{participante.numero_documento}</span>
                               </p>
                             </div>
                             <button

@@ -67,7 +67,6 @@ export async function GET(request: NextRequest) {
         const certificados = await certificadoRepo
           .createQueryBuilder('c')
           .leftJoinAndSelect('c.lote', 'l')
-          .leftJoinAndSelect('c.datos', 'd')
           .where('c.participante_id = :participanteId', { participanteId: participante.id })
           .orderBy('c.fecha_emision', 'DESC')
           .getMany();
@@ -75,7 +74,7 @@ export async function GET(request: NextRequest) {
         console.log(`🔍 Participante: ${participante.nombres} ${participante.apellidos} - Certificados: ${certificados.length}`);
 
         const certificadosFormateados = certificados.map(cert => {
-          const nombreOverride = cert.datos?.find(d => d.campo === '_nombre_override');
+          // 🆕 PRIORIDAD: usar cert.nombre_override directamente de la tabla certificados
           const nombreCompleto = [participante.termino, participante.nombres, participante.apellidos]
             .filter(Boolean)
             .join(' ')
@@ -90,8 +89,8 @@ export async function GET(request: NextRequest) {
           return {
             id: cert.id,
             codigo_unico: cert.codigo || 'SIN-CODIGO',
-            nombre_actual: nombreOverride?.valor || nombreCompleto,
-            tiene_override: !!nombreOverride,
+            nombre_actual: cert.nombre_override || nombreCompleto, // 🔑 Usar cert.nombre_override
+            tiene_override: !!cert.nombre_override, // 🔑 Verificar cert.nombre_override
             tipo_documento: cert.lote?.tipo_documento || 'Certificado',
             curso: cert.lote?.curso || 'Sin curso',
             fecha_emision: cert.fecha_emision,

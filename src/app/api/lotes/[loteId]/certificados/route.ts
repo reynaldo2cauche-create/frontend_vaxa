@@ -40,6 +40,17 @@ export async function GET(
     // Construir query base - CORREGIDO: usar empresa_id del lote, no del token
     const qb = certificadoRepo
       .createQueryBuilder('cert')
+      .select([
+        'cert.id',
+        'cert.codigo',
+        'cert.nombre_override', // 🔑 Seleccionar explícitamente nombre_override
+        'cert.fecha_emision',
+        'cert.estado',
+        'cert.archivo_url',
+        'cert.participante_id',
+        'cert.curso_id',
+        'cert.lote_id'
+      ])
       .leftJoinAndSelect('cert.participante', 'participante')
       .leftJoinAndSelect('cert.curso', 'curso')
       .leftJoinAndSelect('cert.lote', 'lote') // Agregar join con lote
@@ -75,9 +86,11 @@ export async function GET(
         const termino = datosMap['termino'] || datosMap['tratamiento'] || '';
 
         // 🆕 PRIORIDAD: cert.nombre_override > nombre del participante
+        console.log(`🔍 Cert ID ${cert.id}: nombre_override = "${cert.nombre_override}"`);
         const nombreCompleto = cert.nombre_override && cert.nombre_override.trim()
           ? cert.nombre_override.trim()
           : `${cert.participante?.nombres || ''} ${cert.participante?.apellidos || ''}`.trim();
+        console.log(`   ➡️ nombre_completo final = "${nombreCompleto}"`);
 
         return {
           certificado_id: cert.id,
@@ -100,6 +113,8 @@ export async function GET(
         };
       })
     );
+
+    console.log('📤 Enviando al frontend:', JSON.stringify(certificadosConDetalles.slice(0, 2), null, 2));
 
     return NextResponse.json({
       success: true,

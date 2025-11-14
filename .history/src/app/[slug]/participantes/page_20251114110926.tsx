@@ -46,7 +46,8 @@ export default function ParticipantesPage() {
   // 🆕 Estados para edición de participante
   const [editandoParticipante, setEditandoParticipante] = useState<number | null>(null);
   const [participanteEditado, setParticipanteEditado] = useState({
-    nombreCompleto: '',
+    nombres: '',
+    apellidos: '',
     email: '',
     telefono: '',
     dni: ''
@@ -151,8 +152,14 @@ export default function ParticipantesPage() {
   // 🆕 Iniciar edición de participante
   const iniciarEdicionParticipante = (participante: Participante) => {
     setEditandoParticipante(participante.id);
+    // Separar nombre completo en nombres y apellidos
+    const nombreCompleto = participante.nombre.split(' ');
+    const apellidos = nombreCompleto.slice(-2).join(' '); // Últimas 2 palabras como apellidos
+    const nombres = nombreCompleto.slice(0, -2).join(' ') || nombreCompleto[0]; // El resto como nombres
+
     setParticipanteEditado({
-      nombreCompleto: participante.nombre,
+      nombres: nombres,
+      apellidos: apellidos,
       email: participante.email || '',
       telefono: participante.telefono || '',
       dni: participante.dni
@@ -163,7 +170,8 @@ export default function ParticipantesPage() {
   const cancelarEdicionParticipante = () => {
     setEditandoParticipante(null);
     setParticipanteEditado({
-      nombreCompleto: '',
+      nombres: '',
+      apellidos: '',
       email: '',
       telefono: '',
       dni: ''
@@ -172,7 +180,7 @@ export default function ParticipantesPage() {
 
   // 🆕 Guardar cambios del participante (SIN regenerar certificados)
   const guardarParticipante = async (participanteId: number) => {
-    if (!participanteEditado.nombreCompleto.trim()) {
+    if (!participanteEditado.nombres.trim()) {
       alert('El nombre no puede estar vacío');
       return;
     }
@@ -190,7 +198,8 @@ export default function ParticipantesPage() {
         credentials: 'include',
         body: JSON.stringify({
           participante_id: participanteId,
-          nombre_completo: participanteEditado.nombreCompleto,
+          nombres: participanteEditado.nombres,
+          apellidos: participanteEditado.apellidos,
           correo_electronico: participanteEditado.email || null,
           telefono: participanteEditado.telefono || null
         })
@@ -209,7 +218,7 @@ export default function ParticipantesPage() {
           p.id === participanteId
             ? {
                 ...p,
-                nombre: participanteEditado.nombreCompleto.trim(),
+                nombre: `${participanteEditado.nombres}`.trim(),
                 email: participanteEditado.email,
                 telefono: participanteEditado.telefono
               }
@@ -456,16 +465,28 @@ const guardarYRegenerar = async (certificadoId: number) => {
                   {editandoParticipante === participante.id ? (
                     // 🆕 Modo Edición
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="md:col-span-2">
+                      <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Nombre Completo *
+                          Nombres *
                         </label>
                         <input
                           type="text"
-                          value={participanteEditado.nombreCompleto}
-                          onChange={(e) => setParticipanteEditado({ ...participanteEditado, nombreCompleto: e.target.value })}
+                          value={participanteEditado.nombres}
+                          onChange={(e) => setParticipanteEditado({ ...participanteEditado, nombres: e.target.value })}
                           className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          placeholder="Nombre completo del participante"
+                          placeholder="Nombres"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Apellidos *
+                        </label>
+                        <input
+                          type="text"
+                          value={participanteEditado.apellidos}
+                          onChange={(e) => setParticipanteEditado({ ...participanteEditado, apellidos: e.target.value })}
+                          className="w-full px-4 py-2 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                          placeholder="Apellidos"
                         />
                       </div>
                       <div>

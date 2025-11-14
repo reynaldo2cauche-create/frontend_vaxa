@@ -651,8 +651,7 @@ export default function ParticipantesLotePage() {
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-sm font-semibold text-gray-900">
-                                {participante.nombre_actual || participante.nombre_completo}<br/>
-                               <span className="block mt-1 text-xs text-purple-600"> DNI: {participante.numero_documento}</span>
+                                {participante.nombre_actual || participante.nombre_completo}
                               </p>
                             </div>
                             <button
@@ -706,7 +705,13 @@ export default function ParticipantesLotePage() {
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-1.5">
-                           
+                            <button
+                              onClick={() => startEdit(participante)}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all hover:shadow-sm"
+                              title="Editar datos del participante"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => previewCertificate(participante.certificado_id, participante.codigo)}
                               className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-all hover:shadow-sm"

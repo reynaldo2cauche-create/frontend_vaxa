@@ -607,7 +607,46 @@ export default function ParticipantesLotePage() {
                           </span>
                         )}
                       </td>
-                  
+                      
+                      <td className="px-6 py-4">
+                        {isEditing && editData ? (
+                          <div className="space-y-2">
+                            <input
+                              type="text"
+                              value={editData.termino}
+                              onChange={(e) => setEditData({ ...editData, termino: e.target.value })}
+                              placeholder="Sr./Sra./Ing."
+                              className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                            />
+                            <input
+                              type="text"
+                              value={editData.nombres}
+                              onChange={(e) => setEditData({ ...editData, nombres: e.target.value })}
+                              placeholder="Nombres"
+                              className="w-full px-3 py-2 text-sm font-medium border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
+                            />
+                            <input
+                              type="text"
+                              value={editData.apellidos}
+                              onChange={(e) => setEditData({ ...editData, apellidos: e.target.value })}
+                              placeholder="Apellidos"
+                              className="w-full px-3 py-2 text-sm font-medium border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
+                            />
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              {participante.nombre_completo}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {participante.tipo_documento}: {participante.numero_documento}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {participante.curso}
+                            </p>
+                          </div>
+                        )}
+                      </td>
 
                       <td className="px-6 py-4">
                         {isEditingCert ? (
@@ -651,8 +690,7 @@ export default function ParticipantesLotePage() {
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-sm font-semibold text-gray-900">
-                                {participante.nombre_actual || participante.nombre_completo}<br/>
-                               <span className="block mt-1 text-xs text-purple-600"> DNI: {participante.numero_documento}</span>
+                                {participante.nombre_actual || participante.nombre_completo}
                               </p>
                             </div>
                             <button
@@ -706,7 +744,13 @@ export default function ParticipantesLotePage() {
                           </div>
                         ) : (
                           <div className="flex items-center justify-end gap-1.5">
-                           
+                            <button
+                              onClick={() => startEdit(participante)}
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all hover:shadow-sm"
+                              title="Editar datos del participante"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
                             <button
                               onClick={() => previewCertificate(participante.certificado_id, participante.codigo)}
                               className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-all hover:shadow-sm"

@@ -16,7 +16,8 @@ import {
   XCircle,
   FileText,
   Filter,
-  Eye
+  Eye,
+  RefreshCw
 } from 'lucide-react';
 
 interface Participante {
@@ -46,12 +47,12 @@ interface EditingCertificado {
 }
 
 // Componente para el modal de previsualización
-function PdfPreviewModal({ 
-  isOpen, 
-  onClose, 
+function PdfPreviewModal({
+  isOpen,
+  onClose,
   certificadoId,
-  codigo 
-}: { 
+  codigo
+}: {
   isOpen: boolean;
   onClose: () => void;
   certificadoId: number;
@@ -59,7 +60,7 @@ function PdfPreviewModal({
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-   
+
 
   const pdfUrl = `/api/certificados/${certificadoId}/preview`;
 
@@ -102,7 +103,7 @@ function PdfPreviewModal({
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <div className="flex-1 relative">
           {loading && (
             <div className="absolute inset-0 flex items-center justify-center bg-white">
@@ -110,7 +111,7 @@ function PdfPreviewModal({
               <span className="ml-2 text-gray-600">Cargando certificado...</span>
             </div>
           )}
-          
+
           {error && (
             <div className="absolute inset-0 flex items-center justify-center bg-white">
               <div className="text-center">
@@ -212,6 +213,7 @@ export default function ParticipantesLotePage() {
 
       if (res.ok) {
         const data = await res.json();
+        console.log('📥 Frontend recibió:', data.data.certificados.slice(0, 2));
         setParticipantes(Array.isArray(data.data.certificados) ? data.data.certificados : []);
       }
     } catch (error) {
@@ -239,10 +241,10 @@ export default function ParticipantesLotePage() {
 
     filtered.sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortField) {
         case 'nombre':
-          comparison = a.apellidos.localeCompare(b.apellidos);
+          comparison = a.nombre_completo.localeCompare(b.nombre_completo);
           break;
         case 'documento':
           comparison = a.numero_documento.localeCompare(b.numero_documento);
@@ -282,7 +284,7 @@ export default function ParticipantesLotePage() {
     try {
       console.log(`✏️ Guardando nombre para certificado ${certificadoId}: "${nombreEditado}"`);
 
-      // PASO 1: Guardar el nombre editado usando _nombre_override
+      // PASO 1: Guardar el nombre editado en nombre_override
       const editResponse = await fetch(`/api/certificados/${certificadoId}/editar-nombre`, {
         method: 'PUT',
         headers: {
@@ -299,7 +301,7 @@ export default function ParticipantesLotePage() {
         throw new Error(error.error || 'Error al guardar el nombre');
       }
 
-      console.log('✅ Nombre guardado con _nombre_override');
+      console.log('✅ Nombre guardado en nombre_override');
 
       // PASO 2: Regenerar SOLO este certificado
       console.log(`🔄 Regenerando certificado ${certificadoId}...`);
@@ -411,10 +413,10 @@ export default function ParticipantesLotePage() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  Participantes del Lote #{loteId}
+                  Certificados del Lote #{loteId}
                 </h1>
                 <p className="text-sm text-gray-600">
-                  {stats.total} participantes • {stats.activos} activos • {stats.revocados} revocados
+                  {stats.total} certificados • {stats.activos} activos • {stats.revocados} revocados
                 </p>
               </div>
             </div>
@@ -549,7 +551,7 @@ export default function ParticipantesLotePage() {
                           {participante.codigo}
                         </span>
                       </td>
-                      
+
                       <td className="px-6 py-4">
                         {isEditingCert ? (
                           <div className="space-y-2">
@@ -625,18 +627,18 @@ export default function ParticipantesLotePage() {
                             <button
                               onClick={() => guardarYRegenerar(participante.certificado_id)}
                               disabled={regenerando}
-                              className="p-2.5 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                              title="Guardar y regenerar certificado"
+                              className="flex items-center gap-1.5 px-3 py-2 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Guardar y regenerar PDF"
                             >
                               {regenerando ? (
                                 <>
                                   <Loader2 className="w-4 h-4 animate-spin" />
-                                  <span className="text-xs">Regenerando...</span>
+                                  <span className="text-xs font-medium">Regenerando...</span>
                                 </>
                               ) : (
                                 <>
-                                  <Save className="w-4 h-4" />
-                                  <span className="text-xs">Guardar</span>
+                                  <RefreshCw className="w-4 h-4" />
+                                  <span className="text-xs font-medium">Guardar y Regenerar</span>
                                 </>
                               )}
                             </button>
@@ -653,7 +655,7 @@ export default function ParticipantesLotePage() {
                           <div className="flex items-center justify-end gap-1.5">
                             <button
                               onClick={() => iniciarEdicionCertificado(participante)}
-                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all hover:shadow-sm"
+                              className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-all hover:shadow-sm"
                               title="Editar nombre del certificado"
                             >
                               <Edit2 className="w-4 h-4" />
@@ -667,7 +669,7 @@ export default function ParticipantesLotePage() {
                             </button>
                             <button
                               onClick={() => downloadCertificate(participante.certificado_id, participante.codigo)}
-                              className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-all hover:shadow-sm"
+                              className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all hover:shadow-sm"
                               title="Descargar certificado"
                             >
                               <Download className="w-4 h-4" />
@@ -686,12 +688,12 @@ export default function ParticipantesLotePage() {
             <div className="text-center py-12">
               <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                No se encontraron participantes
+                No se encontraron certificados
               </h3>
               <p className="text-gray-600">
                 {searchTerm
                   ? 'Intenta con otros términos de búsqueda'
-                  : 'Este lote no tiene participantes registrados'}
+                  : 'Este lote no tiene certificados registrados'}
               </p>
             </div>
           )}
@@ -770,13 +772,13 @@ export default function ParticipantesLotePage() {
           <div className="flex items-start gap-3">
             <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
             <div className="text-sm text-blue-800">
-              <p className="font-semibold mb-1">💡 Información importante:</p>
+              <p className="font-semibold mb-1">💡 Consejos:</p>
               <ul className="list-disc list-inside space-y-1 text-blue-700">
-                <li><strong>Nombre en Certificado:</strong> Es el nombre que aparece en el PDF. Puede ser diferente al nombre real del participante.</li>
-                <li>✏️ <strong>Editar:</strong> Cambia solo el nombre de ESE certificado específico (no afecta otros certificados del mismo participante)</li>
-                <li>💾 <strong>Guardar:</strong> Regenera automáticamente SOLO ese certificado con el nuevo nombre</li>
-                <li>🟣 <strong>Badge &quot;Personalizado&quot;:</strong> Indica que el certificado tiene un nombre diferente al del participante original</li>
-                <li>👤 <strong>Datos del participante:</strong> Para editar DNI, email, teléfono, etc. usa la vista de &quot;Participantes&quot;</li>
+                <li>Haz clic en el ícono de editar (✏️) para modificar el <strong>nombre en el certificado</strong></li>
+                <li>Los cambios se guardan y el PDF se regenera automáticamente</li>
+                <li>El badge &quot;Personalizado&quot; indica que el certificado tiene un nombre diferente al del participante</li>
+                <li>Usa el ícono de vista previa (👁️) para ver el certificado actualizado</li>
+                <li>Para editar los datos del participante, usa la vista de &quot;Participantes&quot;</li>
               </ul>
             </div>
           </div>
