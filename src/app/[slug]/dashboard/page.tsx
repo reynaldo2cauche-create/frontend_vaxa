@@ -36,6 +36,7 @@ import ModalLimitePlan from '@/components/ModalLimitePlan/route';
 import { PlanProvider } from '@/contexts/PlanContext';
 import { ContadorPlan } from './ContadorPlan';
 import { ActualizadorPlanAuto } from './ActualizadorPlanAuto';
+import BrandColors from '@/components/BrandColors';
 
 // ✅ INTERFACE UNIFICADA para firmas
 interface Firma {
@@ -361,9 +362,10 @@ export default function DashboardPage() {
   return (
     <PlanProvider>
       <ActualizadorPlanAuto />
-    <div className="min-h-screen bg-gray-50">
+      <BrandColors colorPrimario={empresa.color_primario} colorSecundario={empresa.color_secundario} />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       {/* HEADER */}
-      <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-3">
@@ -391,21 +393,21 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* 🆕 MENÚ DE NAVEGACIÓN */}
+            {/* MENÚ DE NAVEGACIÓN */}
             <nav className="flex items-center gap-2">
               <button
                 onClick={() => router.push(`/${slug}/participantes`)}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors font-medium"
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover-brand rounded-xl transition-all font-medium"
               >
                 <Users className="w-4 h-4" />
-                <span>Participantes</span>
+                <span className="hidden sm:inline">Participantes</span>
               </button>
               <button
                 onClick={() => router.push(`/${slug}/dashboard/lotes`)}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors font-medium"
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover-brand rounded-xl transition-all font-medium"
               >
                 <FolderOpen className="w-4 h-4" />
-                <span>Historial</span>
+                <span className="hidden sm:inline">Historial</span>
               </button>
             </nav>
 
@@ -453,62 +455,53 @@ export default function DashboardPage() {
         </div>
 
         {/* ESTADÍSTICAS */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{
-                  background: `${empresa.color_primario}15`,
-                  color: empresa.color_primario
-                }}
-              >
-                <FileText className="w-6 h-6" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          {/* Card 1 - Total Certificados */}
+          <div className="bg-gradient-brand-soft border-2 border-brand/20 rounded-2xl p-5 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                <FileText className="w-6 h-6 text-brand" />
               </div>
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                Total
+              <span className="text-xs font-bold text-brand bg-white/80 px-3 py-1 rounded-full">
+                TOTAL
               </span>
             </div>
-            <p className="text-3xl font-bold text-gray-800 mb-1">
+            <p className="text-4xl font-black text-brand mb-1">
               {stats.total_certificados.toLocaleString()}
             </p>
-            <p className="text-sm text-gray-600">Certificados emitidos</p>
+            <p className="text-sm font-semibold text-gray-700">Certificados emitidos</p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{
-                  background: `${empresa.color_secundario}15`,
-                  color: empresa.color_secundario
-                }}
-              >
-                <Calendar className="w-6 h-6" />
+          {/* Card 2 - Este Mes */}
+          <div className="bg-gradient-brand-soft border-2 border-brand/20 rounded-2xl p-5 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                <Calendar className="w-6 h-6 text-brand" />
               </div>
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                Este mes
+              <span className="text-xs font-bold text-brand bg-white/80 px-3 py-1 rounded-full">
+                MES
               </span>
             </div>
-            <p className="text-3xl font-bold text-gray-800 mb-1">
+            <p className="text-4xl font-black text-brand mb-1">
               {stats.certificados_mes.toLocaleString()}
             </p>
-            <p className="text-sm text-gray-600">Certificados nuevos</p>
+            <p className="text-sm font-semibold text-gray-700">Nuevos este mes</p>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div className="w-12 h-12 rounded-xl bg-green-50 flex items-center justify-center text-green-600">
-                <TrendingUp className="w-6 h-6" />
+          {/* Card 3 - Actividad */}
+          <div className="bg-gradient-brand-soft border-2 border-brand/20 rounded-2xl p-5 hover:shadow-lg transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-brand" />
               </div>
-              <span className="text-xs font-medium text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
-                Actividad
+              <span className="text-xs font-bold text-brand bg-white/80 px-3 py-1 rounded-full">
+                ÚLTIMO
               </span>
             </div>
-            <p className="text-lg font-bold text-gray-800 mb-1">
+            <p className="text-base font-black text-brand mb-1 truncate">
               {stats.ultimo_lote || 'Sin actividad'}
             </p>
-            <p className="text-sm text-gray-600">Último lote generado</p>
+            <p className="text-sm font-semibold text-gray-700">Lote generado</p>
           </div>
         </div>
 
@@ -629,30 +622,29 @@ export default function DashboardPage() {
           {/* CONTENIDO DEL PASO ACTUAL */}
           <div className="mt-8">
             {pasoActual === 1 && (
-              <div className="space-y-6">
+              <div className="space-y-4">
                 <DescargarPlantillaExcel />
 
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
-                  <h4 className="font-bold text-blue-900 mb-4 flex items-center gap-2">
-                    <FileSpreadsheet className="w-5 h-5" />
+                <div className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                  <h4 className="font-semibold text-gray-900 text-sm mb-3">
                     Configuración del Lote
                   </h4>
-                  <p className="text-sm text-blue-700 mb-4">
-                    Estos datos se aplicarán a <strong>todos los certificados</strong> de este lote
+                  <p className="text-xs text-gray-600 mb-4">
+                    Estos datos se aplicarán a todos los certificados de este lote
                   </p>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Tipo de Documento <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={tipoDocumento}
                         onChange={(e) => setTipoDocumento(e.target.value)}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
                         required
                       >
-                        <option value="">Seleccione un tipo...</option>
+                        <option value="">Seleccione...</option>
                         <option value="Certificado">Certificado</option>
                         <option value="Certificado de Participación">Certificado de Participación</option>
                         <option value="Certificado de Asistencia">Certificado de Asistencia</option>
@@ -664,7 +656,7 @@ export default function DashboardPage() {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
                         Nombre del Curso <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -672,14 +664,14 @@ export default function DashboardPage() {
                         value={curso}
                         onChange={(e) => setCurso(e.target.value)}
                         placeholder="Ej: Marketing Digital Avanzado"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-gray-400"
                         required
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex justify-end mt-6">
+                <div className="flex justify-end pt-2">
                   <button
                     onClick={() => {
                       if (!tipoDocumento || !curso) {
@@ -689,105 +681,61 @@ export default function DashboardPage() {
                       setPlantillaExcelDescargada(true);
                       setPasoActual(2);
                     }}
-                    className="flex items-center gap-2 px-8 py-3 text-white rounded-xl font-semibold shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none transform hover:scale-105"
-                    style={{
-                      background: !tipoDocumento || !curso
-                        ? '#9ca3af'
-                        : `linear-gradient(135deg, ${empresa.color_primario}, ${empresa.color_secundario})`
-                    }}
                     disabled={!tipoDocumento || !curso}
+                    className="flex items-center gap-2 px-6 py-2 bg-gradient-brand text-white rounded-lg hover:opacity-90 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Siguiente Paso
-                    <ChevronRight className="w-5 h-5" />
+                    Siguiente
+                    <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
             )}
 
             {pasoActual === 2 && (
-              <div className="space-y-6">
-                <PlantillaUpload
-                  empresaId={empresa.id}
-                  onPlantillaSubida={(url) => {
-                    setPlantillaUrl(url);
-                    setPlantillaImagenSubida(true);
-                  }}
-                />
-
-                <LogosUpload
-                  empresaId={empresa.id}
-                  onLogosActualizados={(logosActualizados) => {
-                    setLogos(logosActualizados);
-                    console.log(`✅ Logos actualizados: ${logosActualizados.length}`);
-                  }}
-                />
-
-                <div className="bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 border-2 border-purple-200 rounded-2xl p-6">
-                  <h4 className="font-bold text-purple-900 mb-4 flex items-center gap-2">
-                    <ImageIcon className="w-5 h-5" />
-                    Vista Previa de Ubicaciones
-                  </h4>
-                  <p className="text-sm text-purple-800 mb-4">
-                    Los logos aparecerán en el certificado en estas posiciones:
-                  </p>
-
-                  <div className="bg-white rounded-xl p-6 border-2 border-purple-300">
-                    <div className="relative w-full h-48 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
-                      <div className="absolute top-3 left-3 w-16 h-16 bg-purple-100 border-2 border-purple-400 rounded-lg flex items-center justify-center">
-                        <span className="text-xs font-bold text-purple-700">Logo 1</span>
-                      </div>
-
-                      <div className="absolute top-3 right-3 w-16 h-16 bg-blue-100 border-2 border-blue-400 rounded-lg flex items-center justify-center">
-                        <span className="text-xs font-bold text-blue-700">Logo 2</span>
-                      </div>
-
-                      <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-16 h-16 bg-pink-100 border-2 border-pink-400 rounded-lg flex items-center justify-center">
-                        <span className="text-xs font-bold text-pink-700">Logo 3</span>
-                      </div>
-
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <p className="text-gray-400 text-sm font-medium">Área del Certificado</p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3 mt-4">
-                      <div className="bg-purple-50 rounded-lg p-3 border border-purple-200">
-                        <p className="text-xs font-bold text-purple-900 mb-1">Logo 1</p>
-                        <p className="text-xs text-gray-600">Superior izquierda</p>
-                      </div>
-                      <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                        <p className="text-xs font-bold text-blue-900 mb-1">Logo 2</p>
-                        <p className="text-xs text-gray-600">Superior derecha</p>
-                      </div>
-                      <div className="bg-pink-50 rounded-lg p-3 border border-pink-200">
-                        <p className="text-xs font-bold text-pink-900 mb-1">Logo 3</p>
-                        <p className="text-xs text-gray-600">Centro superior</p>
-                      </div>
-                    </div>
-                  </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Plantilla del Certificado <span className="text-red-500">*</span>
+                  </label>
+                  <PlantillaUpload
+                    empresaId={empresa.id}
+                    onPlantillaSubida={(url) => {
+                      setPlantillaUrl(url);
+                      setPlantillaImagenSubida(true);
+                    }}
+                  />
                 </div>
 
-                <div className="flex justify-between items-center mt-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Logos (opcional)
+                  </label>
+                  <LogosUpload
+                    empresaId={empresa.id}
+                    onLogosActualizados={(logosActualizados) => {
+                      setLogos(logosActualizados);
+                      console.log(`✅ Logos actualizados: ${logosActualizados.length}`);
+                    }}
+                  />
+                </div>
+
+                <div className="flex justify-between items-center pt-4">
                   <button
                     onClick={() => setPasoActual(1)}
-                    className="flex items-center gap-2 px-6 py-3 text-gray-700 bg-white border-2 border-gray-300 rounded-xl hover:bg-gray-50 hover:border-gray-400 font-medium transition-all"
+                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 font-medium"
                   >
-                    <ChevronRight className="w-5 h-5 rotate-180" />
+                    <ChevronRight className="w-4 h-4 rotate-180" />
                     Atrás
                   </button>
 
-                  {plantillaImagenSubida && (
-                    <button
-                      onClick={() => setPasoActual(3)}
-                      className="flex items-center gap-2 px-8 py-3 text-white rounded-xl font-semibold shadow-lg transition-all transform hover:scale-105"
-                      style={{
-                        background: `linear-gradient(135deg, ${empresa.color_primario}, ${empresa.color_secundario})`
-                      }}
-                    >
-                      Siguiente Paso
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setPasoActual(3)}
+                    disabled={!plantillaImagenSubida}
+                    className="flex items-center gap-2 px-6 py-2 bg-gradient-brand text-white rounded-lg hover:opacity-90 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Siguiente
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             )}

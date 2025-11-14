@@ -442,117 +442,35 @@ export default function DescargarPlantillaExcel() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Título */}
+    <div className="space-y-4">
+      {/* Botón de descarga - Minimalista */}
       <div className="text-center">
-        <div className="w-20 h-20 rounded-2xl bg-green-50 flex items-center justify-center mx-auto mb-4">
-          <FileSpreadsheet className="w-10 h-10 text-green-600" />
-        </div>
-        <h3 className="text-2xl font-bold text-gray-800 mb-2">
-          Descarga la Plantilla Excel
-        </h3>
-        <p className="text-gray-600">
-          Usa esta plantilla profesional con colores para organizar los datos de tus certificados
+        <button
+          onClick={descargarPlantilla}
+          className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-brand text-white rounded-lg hover:opacity-90 transition-all font-medium"
+        >
+          <Download className="w-5 h-5" />
+          Descargar Plantilla Excel
+        </button>
+        <p className="text-sm text-gray-500 mt-2">
+          Plantilla con validaciones y formato profesional
         </p>
       </div>
 
-      {/* Botón de descarga */}
-      <div className="flex justify-center">
-        <button
-          onClick={descargarPlantilla}
-          className="flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-        >
-          <Download className="w-6 h-6" />
-          <span className="font-semibold text-lg">Descargar Plantilla Excel</span>
-        </button>
-      </div>
-
-      {/* Información de campos */}
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-        <h4 className="font-bold text-blue-900 mb-4 flex items-center gap-2">
-          <CheckCircle2 className="w-5 h-5" />
-          Campos Obligatorios en la Plantilla
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm text-blue-800">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <strong>Término:</strong> Lic., Dr., Dra., etc.
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <strong>Nombres:</strong> Nombres del participante
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <strong>Apellidos:</strong> Apellidos del participante
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <strong>DNI:</strong> Número de documento
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <strong>Correo Electrónico:</strong> Email del participante
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <strong>Fecha de Emisión:</strong> DD/MM/AAAA
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <strong>Horas Académicas:</strong> Duración del curso
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <strong>Fecha de Inicio:</strong> DD/MM/AAAA
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <strong>Fecha de Fin:</strong> DD/MM/AAAA
-          </div>
+      {/* Información compacta */}
+      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <h4 className="font-semibold text-gray-900 text-sm mb-3">Campos incluidos:</h4>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs text-gray-600">
+          <span>• Término</span>
+          <span>• Nombres</span>
+          <span>• Apellidos</span>
+          <span>• DNI</span>
+          <span>• Correo</span>
+          <span>• Fecha Emisión</span>
+          <span>• Horas</span>
+          <span>• Fecha Inicio</span>
+          <span>• Fecha Fin</span>
         </div>
-      </div>
-
-      {/* Advertencia importante */}
-      <div className="bg-yellow-50 border-2 border-yellow-300 rounded-xl p-6">
-        <h4 className="font-bold text-yellow-900 mb-3 flex items-center gap-2">
-          ⚠️ Importante
-        </h4>
-        <div className="space-y-2 text-sm text-yellow-800">
-          <p>
-            <strong>En el Paso 1 del proceso configurarás:</strong>
-          </p>
-          <ul className="list-disc list-inside space-y-1 ml-4">
-            <li>El <strong>&quot;Tipo de Documento&quot;</strong> que se aplicará a todos los certificados</li>
-            <li>El <strong>&quot;Curso&quot;</strong> que se aplicará a todos los participantes</li>
-          </ul>
-          <p className="mt-3">
-            Estos campos ya NO se incluyen en el Excel, se configuran una sola vez por lote.
-          </p>
-        </div>
-      </div>
-
-      {/* Tips */}
-      <div className="bg-gray-50 rounded-xl p-6">
-        <h4 className="font-semibold text-gray-800 mb-3">💡 Consejos</h4>
-        <ul className="space-y-2 text-sm text-gray-700">
-          <li className="flex items-start gap-2">
-            <span className="text-green-600 mt-0.5">✓</span>
-            <span>No modifiques los nombres de las columnas</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-green-600 mt-0.5">✓</span>
-            <span>Respeta el formato de fechas: DD/MM/AAAA</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-green-600 mt-0.5">✓</span>
-            <span>Completa todos los campos obligatorios</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-green-600 mt-0.5">✓</span>
-            <span>Puedes agregar tantas filas como participantes tengas</span>
-          </li>
-        </ul>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FileText, Sparkles, Loader2, Check, AlertCircle } from 'lucide-react';
+import { Sparkles, Check, AlertCircle } from 'lucide-react';
 
 interface Props {
   onTextoGuardado: (texto: string) => void;
@@ -13,8 +13,6 @@ export default function ConfigurarTexto({ onTextoGuardado, textoInicial = '' }: 
   const [texto, setTexto] = useState(textoInicial);
   const [mejorando, setMejorando] = useState(false);
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error', texto: string } | null>(null);
-  const [textoOriginal, setTextoOriginal] = useState('');
-  const [mostrarComparacion, setMostrarComparacion] = useState(false);
 
   const mejorarTextoConIA = async () => {
     if (!texto.trim()) {
@@ -24,7 +22,6 @@ export default function ConfigurarTexto({ onTextoGuardado, textoInicial = '' }: 
 
     try {
       setMejorando(true);
-      setTextoOriginal(texto);
 
       const response = await fetch('/api/mejorar-texto', {
         method: 'POST',
@@ -38,14 +35,11 @@ export default function ConfigurarTexto({ onTextoGuardado, textoInicial = '' }: 
 
       const data = await response.json();
       setTexto(data.textoMejorado);
-      setMostrarComparacion(true);
-      mostrarMensaje('success', '✨ Texto mejorado con IA');
-
-      setTimeout(() => setMostrarComparacion(false), 8000);
+      mostrarMensaje('success', 'Texto mejorado con IA');
 
     } catch (error) {
       console.error('Error:', error);
-      mostrarMensaje('error', 'Error al mejorar texto. Intenta nuevamente.');
+      mostrarMensaje('error', 'Error al mejorar texto');
     } finally {
       setMejorando(false);
     }
@@ -58,7 +52,7 @@ export default function ConfigurarTexto({ onTextoGuardado, textoInicial = '' }: 
     }
 
     onTextoGuardado(texto);
-    mostrarMensaje('success', '✅ Texto guardado correctamente');
+    mostrarMensaje('success', 'Texto guardado correctamente');
   };
 
   const mostrarMensaje = (tipo: 'success' | 'error', textoMsg: string) => {
@@ -74,120 +68,54 @@ export default function ConfigurarTexto({ onTextoGuardado, textoInicial = '' }: 
   };
 
   const caracteresRestantes = MAX_CARACTERES - texto.length;
-  const porcentajeUsado = (texto.length / MAX_CARACTERES) * 100;
-
-  const getColorContador = () => {
-    if (porcentajeUsado >= 90) return 'text-red-600';
-    if (porcentajeUsado >= 75) return 'text-orange-600';
-    return 'text-gray-600';
-  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <div className="w-20 h-20 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-4">
-          <FileText className="w-10 h-10 text-purple-600" />
-        </div>
-        <h3 className="text-2xl font-bold text-gray-800 mb-2">
-          Configura el Texto Estático
-        </h3>
-        <p className="text-gray-600">
-          Este texto será el MISMO para todos los certificados del lote
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Texto del Certificado
+        </label>
+        <p className="text-xs text-gray-500 mb-2">
+          Este texto aparecerá en todos los certificados del lote
         </p>
       </div>
 
       {/* Mensaje */}
       {mensaje && (
-        <div
-          className={`p-4 rounded-xl flex items-center gap-2 ${
-            mensaje.tipo === 'success'
-              ? 'bg-green-50 text-green-800 border border-green-200'
-              : 'bg-red-50 text-red-800 border border-red-200'
-          }`}
-        >
-          {mensaje.tipo === 'success' ? <Check className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+        <div className={`${mensaje.tipo === 'success' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-red-50 border-red-200 text-red-700'} border rounded-lg p-3 text-sm flex items-center gap-2`}>
+          {mensaje.tipo === 'success' ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
           {mensaje.texto}
         </div>
       )}
 
-      {/* Info */}
-      <div className="bg-blue-50 border-2 border-blue-200 rounded-xl p-6">
-        <h4 className="font-bold text-blue-900 mb-3">
-          ℹ️ Sobre el texto estático
-        </h4>
-        <ul className="space-y-2 text-sm text-blue-800">
-          <li className="flex items-start gap-2">
-            <span className="text-blue-600 mt-0.5">•</span>
-            <span>Escribe el texto que aparecerá en TODOS los certificados</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-600 mt-0.5">•</span>
-            <span>Los datos personales (nombres, DNI, etc.) se agregarán automáticamente del Excel</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-600 mt-0.5">•</span>
-            <span>No uses variables ni placeholders, solo escribe el texto normal</span>
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-blue-600 mt-0.5">•</span>
-            <span>Usa el botón &quot;Mejorar con IA&quot; para corregir ortografía y formalizar el lenguaje</span>
-          </li>
-        </ul>
-      </div>
-
-    {/* Textarea */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Texto del certificado
-        </label>
+      {/* Textarea */}
+      <div className="relative">
         <textarea
           value={texto}
           onChange={handleTextoChange}
-          maxLength={MAX_CARACTERES}
-          className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
-          rows={10}
-          placeholder="Ejemplo: Por la presente se certifica que ha participado exitosamente en el programa de capacitación, cumpliendo satisfactoriamente con las actividades y evaluaciones establecidas. Su dedicación y compromiso durante el desarrollo del curso han sido ejemplares..."
-          spellCheck="true"
-          lang="es"
+          placeholder="Escribe el texto que aparecerá en el certificado. Ejemplo: Por su destacada participación en el curso..."
+          className="w-full h-32 px-3 py-2 border border-gray-300 rounded-lg resize-none text-sm focus:outline-none focus:border-gray-400"
         />
-        <div className="flex items-center justify-between mt-2">
-          <p className="text-xs text-gray-500">
-            💡 El corrector ortográfico está activado
-          </p>
-          <p className={`text-xs font-semibold ${getColorContador()}`}>
-            {caracteresRestantes} caracteres restantes
-          </p>
-        </div>
-        
-        {/* Barra de progreso */}
-        <div className="w-full h-2 bg-gray-200 rounded-full mt-2 overflow-hidden">
-          <div 
-            className={`h-full transition-all duration-300 ${
-              porcentajeUsado >= 90 ? 'bg-red-500' : 
-              porcentajeUsado >= 75 ? 'bg-orange-500' : 
-              'bg-purple-500'
-            }`}
-            style={{ width: `${porcentajeUsado}%` }}
-          />
+        <div className="absolute bottom-2 right-2 text-xs text-gray-400">
+          {caracteresRestantes} caracteres restantes
         </div>
       </div>
 
       {/* Botones */}
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <button
           onClick={mejorarTextoConIA}
           disabled={mejorando || !texto.trim()}
-          className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {mejorando ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
               Mejorando...
             </>
           ) : (
             <>
-              <Sparkles className="w-5 h-5" />
+              <Sparkles className="w-4 h-4" />
               Mejorar con IA
             </>
           )}
@@ -196,57 +124,21 @@ export default function ConfigurarTexto({ onTextoGuardado, textoInicial = '' }: 
         <button
           onClick={guardarTexto}
           disabled={!texto.trim()}
-          className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="flex items-center gap-2 px-4 py-2 bg-gradient-brand text-white rounded-lg hover:opacity-90 transition-all text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Check className="w-5 h-5" />
+          <Check className="w-4 h-4" />
           Guardar Texto
         </button>
       </div>
 
-      {/* Comparación antes/después */}
-      {mostrarComparacion && textoOriginal && (
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-300 rounded-xl p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-5 h-5 text-purple-600" />
-            <h4 className="font-bold text-purple-900">Mejoras realizadas por IA</h4>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Original */}
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-xs font-bold text-red-900 uppercase mb-2">Texto Original</p>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap line-through opacity-70">
-                {textoOriginal}
-              </p>
-            </div>
-
-            {/* Mejorado */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-xs font-bold text-green-900 uppercase mb-2">Texto Mejorado</p>
-              <p className="text-sm text-gray-800 whitespace-pre-wrap font-medium">
-                {texto}
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => setMostrarComparacion(false)}
-            className="text-xs text-purple-600 hover:text-purple-800 underline mt-3"
-          >
-            Cerrar comparación
-          </button>
-        </div>
-      )}
-
-      {/* Vista previa */}
-      {texto && !mostrarComparacion && (
-        <div className="bg-gray-50 rounded-xl p-6">
-          <p className="text-sm font-semibold text-gray-700 mb-3">📄 Vista previa:</p>
-          <p className="text-sm text-gray-600 whitespace-pre-wrap leading-relaxed">
-            {texto}
-          </p>
-        </div>
-      )}
+      {/* Ejemplo */}
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+        <p className="text-xs font-medium text-gray-700 mb-1">Ejemplo:</p>
+        <p className="text-xs text-gray-600 italic">
+          "Por su destacada participación y excelente desempeño en el curso de Marketing Digital,
+          habiendo cumplido satisfactoriamente con las actividades programadas..."
+        </p>
+      </div>
     </div>
   );
 }

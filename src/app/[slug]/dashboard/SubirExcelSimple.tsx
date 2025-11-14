@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Upload, FileSpreadsheet, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, FileSpreadsheet, CheckCircle, AlertCircle, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface Props {
@@ -33,7 +33,6 @@ export default function SubirExcelSimple({ empresaId, onExcelCargado, onValidaci
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Limpiar estados previos ANTES de comenzar validación
     setArchivo(file);
     setError(null);
     setExito(false);
@@ -42,21 +41,17 @@ export default function SubirExcelSimple({ empresaId, onExcelCargado, onValidaci
     try {
       setCargando(true);
 
-      // Leer el Excel
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
 
-      // Buscar la hoja "Datos Participantes" (con o sin emoji)
       let sheetName = workbook.SheetNames.find(name =>
         name.includes('Datos Participantes') || name.includes('Datos')
       );
 
-      // Si no se encuentra, intentar con la segunda hoja (índice 1)
       if (!sheetName && workbook.SheetNames.length > 1) {
         sheetName = workbook.SheetNames[1];
       }
 
-      // Si aún no hay, usar la primera
       if (!sheetName) {
         sheetName = workbook.SheetNames[0];
       }
@@ -70,27 +65,25 @@ export default function SubirExcelSimple({ empresaId, onExcelCargado, onValidaci
         return;
       }
 
-      // Validar que tenga todos los campos requeridos
       const primeraFila = data[0] as any;
       const columnasExcel = Object.keys(primeraFila);
 
       const camposFaltantes = CAMPOS_REQUERIDOS.filter(campo => !columnasExcel.includes(campo));
 
       if (camposFaltantes.length > 0) {
-        setError(`Faltan las siguientes columnas en el Excel: ${camposFaltantes.join(', ')}`);
+        setError(`Faltan columnas: ${camposFaltantes.join(', ')}`);
         setCargando(false);
         if (onValidacionChange) onValidacionChange(false);
         return;
       }
 
-      // Todo OK (ya no necesitamos validar Tipo de Documento, Curso, Ponente)
       setDatosExcel(data);
       setExito(true);
       onExcelCargado(data);
       if (onValidacionChange) onValidacionChange(true);
 
     } catch (err) {
-      setError('Error al leer el archivo Excel. Verifica el formato.');
+      setError('Error al leer el archivo. Verifica el formato.');
       console.error(err);
       if (onValidacionChange) onValidacionChange(false);
     } finally {
@@ -107,134 +100,84 @@ export default function SubirExcelSimple({ empresaId, onExcelCargado, onValidaci
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <div className="w-20 h-20 rounded-2xl bg-orange-50 flex items-center justify-center mx-auto mb-4">
-          <FileSpreadsheet className="w-10 h-10 text-orange-600" />
-        </div>
-        <h3 className="text-2xl font-bold text-gray-800 mb-2">
-          Sube el Excel con los Datos
-        </h3>
-        <p className="text-gray-600">
-          Usa la plantilla descargada en el Paso 1
-        </p>
-      </div>
-
-      {/* Mensaje de error */}
+    <div className="space-y-4">
+      {/* Mensajes */}
       {error && (
-        <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start gap-3">
-          <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-bold text-red-800 mb-1">Error</h4>
-            <p className="text-sm text-red-700">{error}</p>
-          </div>
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-red-700 flex-1">{error}</p>
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
+            <X className="w-4 h-4" />
+          </button>
         </div>
       )}
 
-      {/* Mensaje de éxito */}
       {exito && datosExcel.length > 0 && (
-        <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <CheckCircle className="w-5 h-5 text-green-600" />
             <div>
-              <h4 className="font-bold text-green-800 text-lg">¡Excel cargado correctamente!</h4>
-              <p className="text-sm text-green-700">Se generarán {datosExcel.length} certificados</p>
+              <p className="font-semibold text-green-900 text-sm">Excel cargado correctamente</p>
+              <p className="text-xs text-green-700">{datosExcel.length} participantes encontrados</p>
             </div>
           </div>
 
-
-          {/* Vista previa de datos */}
-          <div className="bg-white rounded-lg p-4">
-            <h5 className="font-semibold text-gray-800 mb-3">👥 Primeros 5 registros:</h5>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-200">
-                    <th className="text-left py-2 px-3 font-semibold text-gray-700">Término</th>
-                    <th className="text-left py-2 px-3 font-semibold text-gray-700">Nombres</th>
-                    <th className="text-left py-2 px-3 font-semibold text-gray-700">Apellidos</th>
-                    <th className="text-left py-2 px-3 font-semibold text-gray-700">DNI</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {datosExcel.slice(0, 5).map((row, index) => (
-                    <tr key={index} className="border-b border-gray-100">
-                      <td className="py-2 px-3 text-gray-600">{row['Término']}</td>
-                      <td className="py-2 px-3 text-gray-800">{row['Nombres']}</td>
-                      <td className="py-2 px-3 text-gray-800">{row['Apellidos']}</td>
-                      <td className="py-2 px-3 text-gray-600">{row['DNI']}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {datosExcel.length > 5 && (
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  ... y {datosExcel.length - 5} registros más
-                </p>
+          {/* Vista previa compacta */}
+          <div className="bg-white rounded border border-green-200 p-3">
+            <p className="text-xs font-medium text-gray-700 mb-2">Primeros registros:</p>
+            <div className="space-y-1">
+              {datosExcel.slice(0, 3).map((row, idx) => (
+                <div key={idx} className="text-xs text-gray-600 flex items-center gap-2">
+                  <span className="w-4 h-4 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-medium">
+                    {idx + 1}
+                  </span>
+                  <span>{row.Nombres} {row.Apellidos}</span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-gray-500">{row.DNI}</span>
+                </div>
+              ))}
+              {datosExcel.length > 3 && (
+                <p className="text-xs text-gray-500 mt-2">...y {datosExcel.length - 3} más</p>
               )}
             </div>
           </div>
 
           <button
             onClick={reiniciar}
-            className="mt-4 text-sm text-orange-600 hover:text-orange-700 underline"
+            className="mt-3 text-xs text-green-700 hover:text-green-900 font-medium"
           >
             Cambiar archivo
           </button>
         </div>
       )}
 
-      {/* Botón para subir archivo */}
+      {/* Zona de subida */}
       {!exito && (
-        <div>
-          <label className="block">
-            <input
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleArchivoChange}
-              className="hidden"
-              disabled={cargando}
-            />
-            <div className={`
-              border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
-              ${cargando
-                ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
-                : 'border-orange-300 bg-orange-50 hover:bg-orange-100 hover:border-orange-400'
-              }
-            `}>
-              {cargando ? (
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="w-12 h-12 text-orange-600 animate-spin" />
-                  <p className="text-sm font-medium text-gray-700">Validando archivo...</p>
-                </div>
-              ) : (
-                <>
-                  <Upload className="w-12 h-12 mx-auto mb-4 text-orange-600" />
-                  <p className="text-sm font-medium text-gray-700 mb-1">
-                    Haz clic para seleccionar el Excel
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    Archivo .xlsx o .xls con la plantilla descargada
-                  </p>
-                </>
-              )}
-            </div>
-          </label>
-
-          {/* Recordatorio */}
-          <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
-            <p className="text-sm text-blue-800 font-medium mb-2">
-              ℹ️ Recordatorio:
-            </p>
-            <ul className="text-xs text-blue-700 space-y-1">
-              <li>• Usa la plantilla descargada en el Paso 1</li>
-              <li>• No modifiques los nombres de las columnas</li>
-              <li>• Completa todos los campos obligatorios</li>
-              <li>• El Tipo de Documento y Curso ya fueron configurados en el Paso 1</li>
-            </ul>
+        <label className="block">
+          <input
+            type="file"
+            accept=".xlsx,.xls"
+            onChange={handleArchivoChange}
+            className="hidden"
+            disabled={cargando}
+          />
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-gray-400 hover:bg-gray-50 transition-colors">
+            {cargando ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+                <p className="text-sm text-gray-600">Validando archivo...</p>
+              </div>
+            ) : (
+              <>
+                <FileSpreadsheet className="w-10 h-10 text-gray-400 mx-auto mb-3" />
+                <p className="text-sm font-medium text-gray-700 mb-1">
+                  Haz clic para seleccionar el archivo Excel
+                </p>
+                <p className="text-xs text-gray-500">Formato .xlsx o .xls</p>
+              </>
+            )}
           </div>
-        </div>
+        </label>
       )}
     </div>
   );

@@ -11,8 +11,11 @@ import {
   Loader2,
   ArrowLeft,
   CheckCircle,
-  XCircle
+  XCircle,
+  Sparkles,
+  FolderOpen
 } from 'lucide-react';
+import BrandColors from '@/components/BrandColors';
 
 interface Lote {
   id: number;
@@ -25,6 +28,14 @@ interface Lote {
   tieneZip: boolean;
 }
 
+interface Empresa {
+  id: number;
+  slug: string;
+  nombre: string;
+  color_primario: string;
+  color_secundario: string;
+}
+
 export default function LotesPage() {
   const params = useParams();
   const router = useRouter();
@@ -32,13 +43,30 @@ export default function LotesPage() {
 
   const [loading, setLoading] = useState(true);
   const [lotes, setLotes] = useState<Lote[]>([]);
+  const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [descargandoZip, setDescargandoZip] = useState<number | null>(null);
 
   useEffect(() => {
+    loadEmpresa();
     loadLotes();
   }, [page]);
+
+  const loadEmpresa = async () => {
+    try {
+      const response = await fetch(`/api/dashboard/${slug}`, {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setEmpresa(data.empresa);
+      }
+    } catch (error) {
+      console.error('Error al cargar empresa:', error);
+    }
+  };
 
   const loadLotes = async () => {
     try {
@@ -89,10 +117,7 @@ export default function LotesPage() {
         throw new Error('Error al generar ZIP');
       }
 
-      // Obtener el blob directamente desde la respuesta
       const blob = await response.blob();
-
-      // Crear URL del blob y descargar
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -102,7 +127,6 @@ export default function LotesPage() {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      // Actualizar el lote para indicar que ahora tiene ZIP
       loadLotes();
     } catch (error) {
       console.error('Error al descargar ZIP:', error);
@@ -117,7 +141,7 @@ export default function LotesPage() {
   };
 
   const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-ES', {
+    return new Date(fecha).toLocaleDateString('es-PE', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -128,171 +152,203 @@ export default function LotesPage() {
 
   if (loading && lotes.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-indigo-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Cargando lotes...</p>
+          <Loader2 className="w-12 h-12 text-gray-400 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600 font-medium">Cargando lotes...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => router.push(`/${slug}/dashboard`)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Volver al Dashboard
-          </button>
-
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <Package className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Gestión de Lotes
-              </h1>
-              <p className="text-gray-600 mt-1">
-                Administra todos tus lotes de certificados
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Lista de Lotes */}
-        {lotes.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm p-12 text-center">
-            <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No hay lotes aún
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Genera tu primer lote de certificados desde el dashboard
-            </p>
+    <>
+      {empresa && <BrandColors colorPrimario={empresa.color_primario} colorSecundario={empresa.color_secundario} />}
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-8 px-4">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
             <button
               onClick={() => router.push(`/${slug}/dashboard`)}
-              className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              className="flex items-center gap-2 text-gray-600 hover-brand mb-6 px-4 py-2 rounded-xl transition-all font-medium"
             >
-              Ir al Dashboard
+              <ArrowLeft className="w-5 h-5" />
+              Volver al Dashboard
             </button>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {lotes.map((lote) => (
-              <div
-                key={lote.id}
-                className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
-              >
-                <div className="flex items-start justify-between">
-                  {/* Info del Lote */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-indigo-600" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {lote.nombreArchivo}
-                        </h3>
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Calendar className="w-4 h-4" />
-                          {formatearFecha(lote.fechaProcesado)}
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Estadísticas */}
-                    <div className="grid grid-cols-3 gap-4 mt-4">
-                      <div className="bg-gray-50 rounded-lg p-3">
-                        <p className="text-xs text-gray-600 mb-1">Total</p>
-                        <p className="text-2xl font-bold text-gray-900">
-                          {lote.totalCertificados}
-                        </p>
-                      </div>
-                      <div className="bg-green-50 rounded-lg p-3">
-                        <div className="flex items-center gap-1 mb-1">
-                          <CheckCircle className="w-3 h-3 text-green-600" />
-                          <p className="text-xs text-green-600">Activos</p>
-                        </div>
-                        <p className="text-2xl font-bold text-green-600">
-                          {lote.certificadosActivos}
-                        </p>
-                      </div>
-                      <div className="bg-red-50 rounded-lg p-3">
-                        <div className="flex items-center gap-1 mb-1">
-                          <XCircle className="w-3 h-3 text-red-600" />
-                          <p className="text-xs text-red-600">Revocados</p>
-                        </div>
-                        <p className="text-2xl font-bold text-red-600">
-                          {lote.certificadosRevocados}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Acciones */}
-                  <div className="flex flex-col gap-2 ml-6">
-                    <button
-                      onClick={() => verCertificados(lote.id)}
-                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                    >
-                      <Eye className="w-4 h-4" />
-                      Ver Certificados
-                    </button>
-
-                    <button
-                      onClick={() => descargarZip(lote.id)}
-                      disabled={descargandoZip === lote.id}
-                      className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      {descargandoZip === lote.id ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Generando...
-                        </>
-                      ) : (
-                        <>
-                          <Download className="w-4 h-4" />
-                          Descargar ZIP
-                        </>
-                      )}
-                    </button>
-                  </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-brand rounded-2xl flex items-center justify-center shadow-lg">
+                  <FolderOpen className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-4xl font-bold text-gray-900 mb-1">
+                    Historial de Lotes
+                  </h1>
+                  <p className="text-gray-600 font-medium">
+                    Gestiona y descarga todos tus lotes de certificados
+                  </p>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
 
-        {/* Paginación */}
-        {totalPages > 1 && (
-          <div className="mt-8 flex items-center justify-center gap-2">
-            <button
-              onClick={() => setPage(p => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Anterior
-            </button>
-            <span className="px-4 py-2 text-gray-700">
-              Página {page} de {totalPages}
-            </span>
-            <button
-              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Siguiente
-            </button>
+              <div className="hidden md:flex items-center gap-3 bg-white rounded-2xl px-6 py-3 shadow-sm border border-gray-100">
+                <Sparkles className="w-5 h-5 text-brand" />
+                <div className="text-right">
+                  <p className="text-xs text-gray-500 font-medium">Total de lotes</p>
+                  <p className="text-2xl font-bold text-gray-900">{lotes.length}</p>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
+
+          {/* Lista de Lotes */}
+          {lotes.length === 0 ? (
+            <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-16 text-center">
+              <div className="w-24 h-24 bg-gradient-brand-soft rounded-full flex items-center justify-center mx-auto mb-6">
+                <Package className="w-12 h-12 text-brand" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                No hay lotes generados aún
+              </h3>
+              <p className="text-gray-600 mb-8 max-w-md mx-auto">
+                Comienza generando tu primer lote de certificados desde el dashboard principal
+              </p>
+              <button
+                onClick={() => router.push(`/${slug}/dashboard`)}
+                className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-brand text-white rounded-xl hover:shadow-xl transition-all font-semibold transform hover:scale-105"
+              >
+                <Sparkles className="w-5 h-5" />
+                Ir al Dashboard
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6">
+              {lotes.map((lote, index) => (
+                <div
+                  key={lote.id}
+                  className="group bg-white rounded-3xl shadow-sm border border-gray-100 p-8 hover:shadow-xl hover:scale-[1.01] transition-all duration-300 relative overflow-hidden"
+                  style={{
+                    animation: `fadeIn 0.3s ease-out ${index * 0.1}s both`
+                  }}
+                >
+                  {/* Decoración de fondo */}
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-brand opacity-5 rounded-full -mr-32 -mt-32 group-hover:scale-110 transition-transform duration-500"></div>
+
+                  <div className="relative grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    {/* Info del Lote - Columna Izquierda */}
+                    <div className="lg:col-span-7">
+                      <div className="flex items-start gap-4">
+                        <div className="w-14 h-14 bg-gradient-brand-soft rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                          <FileText className="w-7 h-7 text-brand" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-lg font-bold text-gray-900 mb-2 truncate">
+                            {lote.nombreArchivo}
+                          </h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-600">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              <span className="font-medium">{formatearFecha(lote.fechaProcesado)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Estadísticas - Columna Central */}
+                    <div className="lg:col-span-3">
+                      <div className="grid grid-cols-3 lg:grid-cols-1 gap-4">
+                        <div className="bg-gray-50 rounded-2xl p-4 text-center">
+                          <p className="text-xs text-gray-500 font-semibold mb-1">Total</p>
+                          <p className="text-2xl font-bold text-gray-900">{lote.totalCertificados}</p>
+                        </div>
+                        <div className="bg-emerald-50 rounded-2xl p-4 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                            <p className="text-xs text-emerald-700 font-semibold">Activos</p>
+                          </div>
+                          <p className="text-2xl font-bold text-emerald-700">{lote.certificadosActivos}</p>
+                        </div>
+                        <div className="bg-red-50 rounded-2xl p-4 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <XCircle className="w-3.5 h-3.5 text-red-600" />
+                            <p className="text-xs text-red-700 font-semibold">Revocados</p>
+                          </div>
+                          <p className="text-2xl font-bold text-red-700">{lote.certificadosRevocados}</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Acciones - Columna Derecha */}
+                    <div className="lg:col-span-2 flex flex-col gap-3">
+                      <button
+                        onClick={() => verCertificados(lote.id)}
+                        className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-brand text-white rounded-xl hover:shadow-lg transition-all font-semibold"
+                      >
+                        <Eye className="w-4 h-4" />
+                        <span className="hidden xl:inline">Ver Detalles</span>
+                      </button>
+                      <button
+                        onClick={() => descargarZip(lote.id)}
+                        disabled={descargandoZip === lote.id}
+                        className="flex items-center justify-center gap-2 px-4 py-3 bg-white border-2 border-gray-200 text-gray-700 rounded-xl hover:border-gray-300 hover:bg-gray-50 transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {descargandoZip === lote.id ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span className="hidden xl:inline">Generando...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Download className="w-4 h-4" />
+                            <span className="hidden xl:inline">Descargar ZIP</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Paginación */}
+          {totalPages > 1 && (
+            <div className="mt-8 flex justify-center items-center gap-2">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all"
+              >
+                Anterior
+              </button>
+              <span className="px-6 py-2 bg-gradient-brand text-white rounded-xl font-bold">
+                {page} / {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all"
+              >
+                Siguiente
+              </button>
+            </div>
+          )}
+        </div>
+
+        <style jsx>{`
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: translateY(20px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+        `}</style>
       </div>
-    </div>
+    </>
   );
 }
