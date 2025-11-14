@@ -4,9 +4,9 @@ import { usePlan } from '@/contexts/PlanContext';
 import { Award, TrendingUp } from 'lucide-react';
 
 export function ContadorPlan() {
-  const { planData, cargando } = usePlan();
+  const { usoPlan, loading } = usePlan();
 
-  if (cargando || !planData) {
+  if (loading || !usoPlan) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 animate-pulse">
         <div className="h-20 bg-gray-200 rounded"></div>
@@ -21,7 +21,7 @@ export function ContadorPlan() {
     porcentaje_usado,
     esta_cerca_limite,
     plan_agotado
-  } = planData;
+  } = usoPlan;
 
   // Determinar color segun uso
   let colorClase = 'bg-green-500';

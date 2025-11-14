@@ -5,6 +5,7 @@ interface ModalExitoProps {
   onClose: () => void;
   totalGenerados: number;
   onDescargarZip?: () => void;
+  onNuevoLote?: () => void;
 }
 
 export default function ModalExitoCertificados({ 

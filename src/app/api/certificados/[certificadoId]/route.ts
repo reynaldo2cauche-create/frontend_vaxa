@@ -229,7 +229,7 @@ export async function PUT(
     // Obtener logos de la empresa
     const logoRepo = dataSource.getRepository(Logo);
     const logos = await logoRepo.find({
-      where: { empresa_id: decoded.empresa_id },
+      where: { empresaId: decoded.empresa_id },
       order: { posicion: 'ASC' }
     });
 
@@ -241,16 +241,23 @@ export async function PUT(
     // Obtener firmas asociadas al certificado
     const certificadoFirmaRepo = dataSource.getRepository(CertificadoFirma);
     const certificadoFirmas = await certificadoFirmaRepo.find({
-      where: { certificado_id: certificadoId },
-      relations: ['firma'],
+      where: { certificadoId: certificadoId },
       order: { orden: 'ASC' }
     });
 
-    const firmasParaPDF = certificadoFirmas.slice(0, 3).map((cf) => ({
-      nombre: cf.firma.nombre,
-      cargo: cf.firma.cargo,
-      firmaUrl: cf.firma.firmaUrl
-    }));
+    const { FirmaDigital } = await import('@/lib/entities/FirmaDigital');
+    const firmaRepo = dataSource.getRepository(FirmaDigital);
+
+    const firmasParaPDF = await Promise.all(
+      certificadoFirmas.slice(0, 3).map(async (cf) => {
+        const firma = await firmaRepo.findOne({ where: { id: cf.firmaId } });
+        return firma ? {
+          nombre: firma.nombre,
+          cargo: firma.cargo,
+          firmaUrl: firma.firmaUrl
+        } : null;
+      })
+    ).then(firmas => firmas.filter((f): f is NonNullable<typeof f> => f !== null));
 
     // Preparar ruta para el nuevo PDF
     const outputDir = path.join(process.cwd(), 'public', 'certificados', decoded.empresa_id.toString());

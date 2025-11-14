@@ -363,8 +363,11 @@ static async generarCertificado(
     }
 
     // 2. Obtener textos configurados
-    let titulo = 'CERTIFICADO DE PARTICIPACIÓN';
+    // 🆕 Prioridad: tipo_documento de los datos > configuración de BD > valor por defecto
+    let titulo = datos.tipo_documento?.toUpperCase() || 'CERTIFICADO DE PARTICIPACIÓN';
     let textoCompletado = 'Por haber completado exitosamente';
+
+    console.log(`📄 Tipo de documento: ${datos.tipo_documento || 'No especificado, usando default'}`);
 
     // Si hay texto estático del paso 4, usarlo (tiene prioridad)
     if (textoEstatico && textoEstatico.trim()) {
@@ -375,7 +378,10 @@ static async generarCertificado(
       const textoConfig = await PlantillaService.obtenerTextoConfig(empresaId);
       if (textoConfig) {
         if (textoConfig.tipo === 'plantilla' && textoConfig.plantillaTexto) {
-          titulo = textoConfig.plantillaTexto.titulo;
+          // Solo sobrescribir el título si no vino tipo_documento de los datos
+          if (!datos.tipo_documento) {
+            titulo = textoConfig.plantillaTexto.titulo;
+          }
           textoCompletado = textoConfig.plantillaTexto.cuerpo;
         }
       }
@@ -479,6 +485,14 @@ static async generarCertificado(
 
         for (const [campoDestino, columnaExcel] of mapeo.entries()) {
           datosMapeados[campoDestino] = String(filaExcel[columnaExcel] || '');
+        }
+
+        // 🆕 Preservar campos especiales que no están en el mapeo pero vienen del Excel procesado
+        if (filaExcel['tipo_documento']) {
+          datosMapeados['tipo_documento'] = String(filaExcel['tipo_documento']);
+        }
+        if (filaExcel['curso']) {
+          datosMapeados['curso'] = String(filaExcel['curso']);
         }
 
         // 2. Buscar o crear participante y curso
