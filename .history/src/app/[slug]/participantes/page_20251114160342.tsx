@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Search, User, FileText, Calendar, Download, Eye, Loader2, ArrowLeft, Edit2, Save, X, RefreshCw, Package, Users, AlertCircle, LogOut } from 'lucide-react';
+import { Search, User, FileText, Calendar, Download, Eye, Loader2, ArrowLeft, Edit2, Save, X, RefreshCw, Package, Users, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 
 interface Certificado {
@@ -106,7 +106,17 @@ export default function ParticipantesPage() {
   }, [slug, router]);
 
 
-  
+    async function handleLogout() {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      router.push(`/login/${slug}`);
+    } catch (error) {
+      console.error('Error al cerrar sesión:', error);
+    }
+  }
   const buscarParticipante = async () => {
     if (!terminoBusqueda.trim()) {
       alert('Por favor ingresa un DNI o nombre para buscar');
@@ -255,17 +265,6 @@ export default function ParticipantesPage() {
     }
   };
 
-    async function handleLogout() {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include'
-      });
-      router.push(`/login/${slug}`);
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
-  }
   const guardarYRegenerar = async (certificadoId: number) => {
     if (!nombreEditado.trim()) {
       alert('El nombre no puede estar vacío');
@@ -421,18 +420,17 @@ export default function ParticipantesPage() {
               </button>
             </nav>
 
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:block text-right">
-                <p className="text-sm font-medium text-gray-800">{usuario?.nombre}</p>
-                <p className="text-xs text-gray-500">{usuario?.email}</p>
-              </div>
-              <button
+            <div className="hidden sm:block text-right">
+              <p className="text-sm font-medium text-gray-800">{usuario?.nombre}</p>
+              <p className="text-xs text-gray-500">{usuario?.email}</p>
+                <button
                 onClick={handleLogout}
                 className="p-2 hover:bg-gray-100 rounded-xl transition-colors group"
                 title="Cerrar sesión"
               >
                 <LogOut className="w-5 h-5 text-gray-600 group-hover:text-red-600 transition-colors" />
               </button>
+
             </div>
           </div>
         </div>

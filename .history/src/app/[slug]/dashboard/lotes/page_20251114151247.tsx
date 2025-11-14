@@ -262,7 +262,20 @@ export default function LotesPage() {
                           <p className="text-xs text-gray-500 font-semibold mb-1">Total</p>
                           <p className="text-2xl font-bold text-gray-900">{lote.totalCertificados}</p>
                         </div>
-                       
+                        <div className="bg-emerald-50 rounded-2xl p-4 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                            <p className="text-xs text-emerald-700 font-semibold">Activos</p>
+                          </div>
+                          <p className="text-2xl font-bold text-emerald-700">{lote.certificadosActivos}</p>
+                        </div>
+                        <div className="bg-red-50 rounded-2xl p-4 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <XCircle className="w-3.5 h-3.5 text-red-600" />
+                            <p className="text-xs text-red-700 font-semibold">Revocados</p>
+                          </div>
+                          <p className="text-2xl font-bold text-red-700">{lote.certificadosRevocados}</p>
+                        </div>
                       </div>
                     </div>
 

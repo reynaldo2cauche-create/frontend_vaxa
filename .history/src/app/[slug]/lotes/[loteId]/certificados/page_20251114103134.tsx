@@ -391,13 +391,11 @@ export default function ParticipantesLotePage() {
                 <h1 className="text-2xl font-bold text-gray-800">
                   Participantes del Lote #{loteId}
                 </h1>
-                <p className="text-sm text-gray-600">
-                  {stats.total} participantes • {stats.activos} activos • {stats.revocados} revocados
-                </p>
+               
               </div>
             </div>
             <button
-              onClick={() => router.push(`/${slug}/lotes`)}
+              onClick={() => router.push(`/${slug}/dashboard/lotes`)}
               className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
             >
               ← Volver a Lotes

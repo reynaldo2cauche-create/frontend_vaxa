@@ -442,7 +442,7 @@ export default function DashboardPage() {
           </div>
 
           <button
-            onClick={() => router.push(`/${slug}/dashboard/lotes`)}
+            onClick={() => router.push(`/${slug}/lotes`)}
             className="hidden md:flex items-center gap-2 px-6 py-3 text-white rounded-xl font-semibold shadow-lg transition-all transform hover:scale-105"
             style={{
               background: `linear-gradient(135deg, ${empresa.color_primario}, ${empresa.color_secundario})`
