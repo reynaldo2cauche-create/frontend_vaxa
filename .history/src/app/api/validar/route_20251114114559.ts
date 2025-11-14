@@ -39,13 +39,13 @@ export async function GET(request: NextRequest) {
     }
 
     // 🆕 Obtener el nombre que se muestra en el certificado
-    // Prioridad: nombre_override (columna directa) > nombre del participante
-    const nombreCertificado = (certificado.nombre_override && certificado.nombre_override.trim())
-      ? certificado.nombre_override.trim()
-      : [certificado.participante?.nombres, certificado.participante?.apellidos]
-          .filter(Boolean)
-          .join(' ')
-          .trim();
+    // Prioridad: _nombre_override > nombre del participante
+    const nombreOverride = certificado.datos?.find(d => d.campo === 'nombreoverride');
+    const nombreCertificado = nombreOverride?.valor ||
+      [ certificado.participante?.nombres]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
 
     // Verificar estado
     const esRevocado = certificado.estado === 'revocado';
