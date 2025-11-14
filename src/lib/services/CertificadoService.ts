@@ -23,6 +23,13 @@ import archiver from 'archiver';
  * Todas las empresas usan las mismas coordenadas estándar
  */
 
+/**
+ * Obtiene la fecha actual (TypeORM ya maneja la zona horaria de Perú)
+ */
+function obtenerFechaPeruana(): Date {
+  return new Date();
+}
+
 export interface DatosCertificado {
   [campo: string]: string;
 }
@@ -423,7 +430,7 @@ static async generarCertificado(
       titulo: titulo,
       nombre: datos.nombre || 'Sin nombre',
       curso: datos.curso || 'Sin curso',
-      fecha: datos.fecha || new Date().toLocaleDateString('es-PE'),
+      fecha: datos.fecha || obtenerFechaPeruana().toLocaleDateString('es-PE'),
       horas: datos.horas || '',
       cuerpo: textoCompletado
     };
@@ -525,7 +532,7 @@ static async generarCertificado(
           archivo_url: certGenerado.rutaArchivo,
           nombre_override: nombreCompleto.trim(), // 🔑 Inicializar con nombre del participante
           estado: EstadoCertificado.ACTIVO,
-          fecha_emision: new Date()
+          fecha_emision: obtenerFechaPeruana()
         });
 
         await certificadoRepo.save(certificado);
@@ -541,7 +548,7 @@ static async generarCertificado(
               certificadoId: certificado.id,
               firmaId: firmasIds[orden],
               orden: orden + 1,
-              fechaAsignacion: new Date()
+              fechaAsignacion: obtenerFechaPeruana()
             });
             await certificadoFirmaRepo.save(certificadoFirma);
           }
@@ -767,7 +774,7 @@ static async generarCertificado(
       });
 
       // Certificados de este mes
-      const inicioMes = new Date();
+      const inicioMes = obtenerFechaPeruana();
       inicioMes.setDate(1);
       inicioMes.setHours(0, 0, 0, 0);
 

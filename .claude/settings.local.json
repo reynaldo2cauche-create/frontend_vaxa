@@ -13,7 +13,8 @@
       "Bash(\"C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\":*)",
       "Bash(\"C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -u root -padmin vaxa -e \"UPDATE certificados c LEFT JOIN dato_certificado dc ON dc.certificado_id = c.id AND dc.campo = ''_nombre_override'' SET c.nombre_override = dc.valor WHERE c.nombre_override IS NULL AND dc.valor IS NOT NULL AND dc.valor != '''';\")",
       "Bash(\"C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -u root -padmin vaxa -e \"SHOW TABLES LIKE ''%dato%'';\")",
-      "Bash(\"C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -u root -padmin vaxa -e \"SELECT COUNT(*) as certificados_sin_participante FROM certificados WHERE participante_id IS NULL;\")"
+      "Bash(\"C:/Program Files/MySQL/MySQL Server 8.0/bin/mysql.exe\" -u root -padmin vaxa -e \"SELECT COUNT(*) as certificados_sin_participante FROM certificados WHERE participante_id IS NULL;\")",
+      "Bash(\"C:\\Users\\Lucero\\Desktop\\frontend_vaxa\\src\\app\\api\\plan\\uso\\route.ts\")"
     ],
     "deny": [],
     "ask": []

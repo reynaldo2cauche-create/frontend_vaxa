@@ -43,8 +43,8 @@ export const AppDataSource = new DataSource({
     CertificadoFirma
   ],
   charset: "utf8mb4",
-  
-  timezone: "Z",
+
+  timezone: "-05:00", // Zona horaria de Perú (UTC-5)
 });
 
 let isInitialized = false;
