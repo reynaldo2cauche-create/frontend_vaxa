@@ -38,12 +38,10 @@ interface Participante {
   datos_adicionales: Record<string, string>;
 }
 
-interface EditingParticipant {
-  id: number;
-  termino: string;
-  nombres: string;
-  apellidos: string;
-  correo_electronico: string;
+// 🆕 Solo editamos el nombre del certificado específico
+interface EditingCertificado {
+  certificado_id: number;
+  nombre_completo: string;
 }
 
 // Componente para el modal de previsualización
@@ -172,10 +170,10 @@ export default function ParticipantesLotePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [estadoFiltro, setEstadoFiltro] = useState<'todos' | 'activo' | 'revocado'>('todos');
 
-  // Edición
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editData, setEditData] = useState<EditingParticipant | null>(null);
-  const [saving, setSaving] = useState(false);
+  // 🆕 Edición de certificado específico
+  const [editingCertificadoId, setEditingCertificadoId] = useState<number | null>(null);
+  const [nombreEditado, setNombreEditado] = useState('');
+  const [regenerando, setRegenerando] = useState(false);
 
   // Ordenamiento
   const [sortField, setSortField] = useState<'nombre' | 'documento' | 'fecha'>('nombre');
@@ -259,53 +257,76 @@ export default function ParticipantesLotePage() {
     setFilteredParticipantes(filtered);
   };
 
-  const startEdit = (participante: Participante) => {
-    setEditingId(participante.participante_id);
-    setEditData({
-      id: participante.participante_id,
-      termino: participante.termino || '',
-      nombres: participante.nombres,
-      apellidos: participante.apellidos,
-      correo_electronico: participante.correo_electronico || ''
-    });
+  // 🆕 Iniciar edición de certificado específico
+  const iniciarEdicionCertificado = (participante: Participante) => {
+    setEditingCertificadoId(participante.certificado_id);
+    setNombreEditado(participante.nombre_completo);
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditData(null);
+  // 🆕 Cancelar edición
+  const cancelarEdicion = () => {
+    setEditingCertificadoId(null);
+    setNombreEditado('');
   };
 
-  const saveEdit = async () => {
-    if (!editData) return;
+  // 🆕 Guardar y regenerar certificado específico
+  const guardarYRegenerar = async (certificadoId: number) => {
+    if (!nombreEditado.trim()) {
+      alert('El nombre no puede estar vacío');
+      return;
+    }
+
+    setRegenerando(true);
 
     try {
-      setSaving(true);
-      const res = await fetch(`/api/participantes/${slug}`, {
+      console.log(`✏️ Guardando nombre para certificado ${certificadoId}: "${nombreEditado}"`);
+
+      // PASO 1: Guardar el nombre editado usando _nombre_override
+      const editResponse = await fetch(`/api/certificados/${certificadoId}/editar-nombre`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         credentials: 'include',
         body: JSON.stringify({
-          participante_id: editData.id,
-          termino: editData.termino || null,
-          nombres: editData.nombres,
-          apellidos: editData.apellidos,
-          correo_electronico: editData.correo_electronico || null
+          nuevoNombre: nombreEditado
         })
       });
 
-      if (res.ok) {
-        await loadParticipantes();
-        setEditingId(null);
-        setEditData(null);
-        alert('✅ Participante actualizado correctamente');
-      } else {
-        throw new Error('Error al guardar');
+      if (!editResponse.ok) {
+        const error = await editResponse.json();
+        throw new Error(error.error || 'Error al guardar el nombre');
       }
+
+      console.log('✅ Nombre guardado con _nombre_override');
+
+      // PASO 2: Regenerar SOLO este certificado
+      console.log(`🔄 Regenerando certificado ${certificadoId}...`);
+
+      const regenResponse = await fetch(`/api/certificados/${certificadoId}/regenerar`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+
+      if (!regenResponse.ok) {
+        const error = await regenResponse.json();
+        throw new Error(error.error || 'Error al regenerar certificado');
+      }
+
+      console.log('✅ Certificado regenerado exitosamente');
+
+      // PASO 3: Recargar lista de participantes
+      await loadParticipantes();
+
+      setEditingCertificadoId(null);
+      setNombreEditado('');
+      alert('✅ Certificado actualizado y regenerado exitosamente');
+
     } catch (error) {
-      console.error('Error al guardar:', error);
-      alert('❌ Error al actualizar el participante');
+      console.error('❌ Error:', error);
+      alert(error instanceof Error ? error.message : 'Error al procesar el certificado');
     } finally {
-      setSaving(false);
+      setRegenerando(false);
     }
   };
 
@@ -507,7 +528,8 @@ export default function ParticipantesLotePage() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {currentParticipantes.map((participante, index) => {
-                  const isEditing = editingId === participante.participante_id;
+                  // 🆕 Editar solo el nombre del certificado específico
+                  const isEditingCert = editingCertificadoId === participante.certificado_id;
                   const globalIndex = startIndex + index + 1; // Índice global considerando la paginación
 
                   return (
@@ -528,35 +550,24 @@ export default function ParticipantesLotePage() {
                       </td>
                       
                       <td className="px-6 py-4">
-                        {isEditing && editData ? (
+                        {isEditingCert ? (
                           <div className="space-y-2">
                             <input
                               type="text"
-                              value={editData.termino}
-                              onChange={(e) => setEditData({ ...editData, termino: e.target.value })}
-                              placeholder="Sr./Sra./Ing."
-                              className="w-full px-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
-                            />
-                            <input
-                              type="text"
-                              value={editData.nombres}
-                              onChange={(e) => setEditData({ ...editData, nombres: e.target.value })}
-                              placeholder="Nombres"
+                              value={nombreEditado}
+                              onChange={(e) => setNombreEditado(e.target.value)}
+                              placeholder="Nombre completo del certificado"
                               className="w-full px-3 py-2 text-sm font-medium border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
+                              autoFocus
                             />
-                            <input
-                              type="text"
-                              value={editData.apellidos}
-                              onChange={(e) => setEditData({ ...editData, apellidos: e.target.value })}
-                              placeholder="Apellidos"
-                              className="w-full px-3 py-2 text-sm font-medium border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-blue-50"
-                            />
+                            <p className="text-xs text-gray-500 italic">
+                              ✏️ Editando nombre del certificado específico
+                            </p>
                           </div>
                         ) : (
                           <div>
                             <p className="text-sm font-semibold text-gray-900">
-                              
-                              {participante.nombres}
+                              {participante.nombre_completo}
                             </p>
                             <p className="text-xs text-gray-500 mt-0.5">
                               {participante.curso}
@@ -577,23 +588,13 @@ export default function ParticipantesLotePage() {
                       </td>
 
                       <td className="px-6 py-4">
-                        {isEditing && editData ? (
-                          <input
-                            type="email"
-                            value={editData.correo_electronico}
-                            onChange={(e) => setEditData({ ...editData, correo_electronico: e.target.value })}
-                            placeholder="correo@ejemplo.com"
-                            className="w-full px-3 py-2 text-sm border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                          />
-                        ) : (
-                          <div className="text-sm">
-                            {participante.correo_electronico ? (
-                              <span className="text-gray-700">{participante.correo_electronico}</span>
-                            ) : (
-                              <span className="text-gray-400 italic text-xs">Sin correo</span>
-                            )}
-                          </div>
-                        )}
+                        <div className="text-sm">
+                          {participante.correo_electronico ? (
+                            <span className="text-gray-700">{participante.correo_electronico}</span>
+                          ) : (
+                            <span className="text-gray-400 italic text-xs">Sin correo</span>
+                          )}
+                        </div>
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -611,23 +612,29 @@ export default function ParticipantesLotePage() {
                       </td>
 
                       <td className="px-6 py-4 whitespace-nowrap text-right">
-                        {isEditing ? (
+                        {isEditingCert ? (
                           <div className="flex items-center justify-end gap-2">
                             <button
-                              onClick={saveEdit}
-                              disabled={saving}
-                              className="p-2.5 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Guardar cambios"
+                              onClick={() => guardarYRegenerar(participante.certificado_id)}
+                              disabled={regenerando}
+                              className="p-2.5 text-white bg-green-600 hover:bg-green-700 rounded-lg transition-all shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                              title="Guardar y regenerar certificado"
                             >
-                              {saving ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
+                              {regenerando ? (
+                                <>
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                  <span className="text-xs">Regenerando...</span>
+                                </>
                               ) : (
-                                <Save className="w-4 h-4" />
+                                <>
+                                  <Save className="w-4 h-4" />
+                                  <span className="text-xs">Guardar</span>
+                                </>
                               )}
                             </button>
                             <button
-                              onClick={cancelEdit}
-                              disabled={saving}
+                              onClick={cancelarEdicion}
+                              disabled={regenerando}
                               className="p-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all"
                               title="Cancelar"
                             >
@@ -637,9 +644,9 @@ export default function ParticipantesLotePage() {
                         ) : (
                           <div className="flex items-center justify-end gap-1.5">
                             <button
-                              onClick={() => startEdit(participante)}
+                              onClick={() => iniciarEdicionCertificado(participante)}
                               className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-all hover:shadow-sm"
-                              title="Editar participante"
+                              title="Editar nombre del certificado"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
@@ -757,11 +764,11 @@ export default function ParticipantesLotePage() {
             <div className="text-sm text-blue-800">
               <p className="font-semibold mb-1">💡 Consejos:</p>
               <ul className="list-disc list-inside space-y-1 text-blue-700">
-                <li>Haz clic en el ícono de editar para modificar los datos del participante</li>
-                <li>Usa el ícono de vista previa (👁️) para generar y ver el certificado en tiempo real</li>
-                <li>Los cambios se guardan inmediatamente</li>
-                <li>La vista previa genera el PDF dinámicamente con los datos actualizados</li>
-                <li>Puedes descargar certificados individuales con el ícono de descarga</li>
+                <li>✏️ El botón de editar permite cambiar el nombre del <strong>certificado específico</strong> (no afecta al participante en otros certificados)</li>
+                <li>👁️ Usa el ícono de vista previa para ver el certificado en tiempo real</li>
+                <li>💾 Al guardar, se regenera automáticamente SOLO ese certificado con el nuevo nombre</li>
+                <li>📥 Puedes descargar certificados individuales con el ícono de descarga</li>
+                <li>ℹ️ Para editar los datos del participante en todos sus certificados, usa la vista de &quot;Participantes&quot;</li>
               </ul>
             </div>
           </div>
