@@ -74,14 +74,20 @@ export async function GET(
         // Obtener término del participante si existe en datos adicionales
         const termino = datosMap['termino'] || datosMap['tratamiento'] || '';
 
+        // 🆕 PRIORIDAD: _nombre_override > nombre del participante
+        const nombreOverride = datosMap['_nombre_override'];
+        const nombreCompleto = nombreOverride && nombreOverride.trim()
+          ? nombreOverride.trim()
+          : `${cert.participante?.nombres || ''} ${cert.participante?.apellidos || ''}`.trim();
+
         return {
-          certificado_id: cert.id, // CAMBIADO: para coincidir con interfaz
+          certificado_id: cert.id,
           codigo: cert.codigo,
           participante_id: cert.participante?.id,
           termino: termino,
           nombres: cert.participante?.nombres || '',
           apellidos: cert.participante?.apellidos || '',
-          nombre_completo: `${cert.participante?.nombres || ''} ${cert.participante?.apellidos || ''}`.trim(),
+          nombre_completo: nombreCompleto, // 🔑 Ahora usa _nombre_override con prioridad
           tipo_documento: cert.participante?.tipo_documento || '',
           numero_documento: cert.participante?.numero_documento || '',
           correo_electronico: cert.participante?.correo_electronico || null,
@@ -89,7 +95,7 @@ export async function GET(
           horas: cert.curso?.horas_academicas || 0,
           fecha_emision: cert.fecha_emision,
           estado: cert.estado,
-          archivo_url: cert.archivo_url, // CAMBIADO: para coincidir con interfaz
+          archivo_url: cert.archivo_url,
           datos_adicionales: datosMap
         };
       })
