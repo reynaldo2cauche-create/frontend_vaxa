@@ -103,19 +103,26 @@ export default function LogosUpload({ empresaId, onLogosActualizados }: LogosUpl
     setError(null);
 
     try {
-      const res = await fetch(`/api/logos/${modalEliminar.logo.id}`, {
+      const res = await fetch('/api/logos/eliminar', {
         method: 'DELETE',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ logoId: modalEliminar.logo.id })
       });
 
-      if (!res.ok) throw new Error('Error al eliminar logo');
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Error al eliminar logo');
+      }
 
       setSuccess('Logo eliminado correctamente');
       await cargarLogos();
       setTimeout(() => setSuccess(null), 3000);
       cerrarModalEliminar();
     } catch (err) {
-      setError('Error al eliminar logo');
+      setError(err instanceof Error ? err.message : 'Error al eliminar logo');
     } finally {
       setEliminando(false);
     }
@@ -206,7 +213,17 @@ export default function LogosUpload({ empresaId, onLogosActualizados }: LogosUpl
           })}
         </div>
 
-        <p className="text-xs text-gray-500">Los logos son opcionales y aparecerán en la parte superior del certificado</p>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-xs text-blue-800 font-medium mb-1">
+            📐 <strong>Medidas recomendadas:</strong>
+          </p>
+          <ul className="text-xs text-blue-700 space-y-0.5">
+            <li>• <strong>Cuadrado:</strong> 300 x 300 píxeles</li>
+            <li>• <strong>Rectangular:</strong> 400 x 200 píxeles</li>
+            <li>• <strong>Formato:</strong> PNG con fondo transparente</li>
+            <li>• <strong>Peso:</strong> Máximo 2MB por logo</li>
+          </ul>
+        </div>
       </div>
 
       {/* Modal */}

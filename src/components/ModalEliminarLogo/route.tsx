@@ -4,16 +4,16 @@ interface ModalEliminarLogoProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  nombreLogo: string;
-  loading?: boolean;
+  logoNombre: string;  // ← Mantener este nombre
+  eliminando?: boolean;  // ← Cambiar 'loading' por 'eliminando'
 }
 
 export default function ModalEliminarLogo({ 
   isOpen, 
   onClose, 
   onConfirm,
-  nombreLogo,
-  loading = false
+  logoNombre,
+  eliminando = false  // ← Cambiar aquí también
 }: ModalEliminarLogoProps) {
   if (!isOpen) return null;
 
@@ -22,7 +22,7 @@ export default function ModalEliminarLogo({
       {/* Overlay oscuro con blur */}
       <div 
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={loading ? undefined : onClose}
+        onClick={eliminando ? undefined : onClose}
       />
       
       {/* Modal */}
@@ -30,7 +30,7 @@ export default function ModalEliminarLogo({
         {/* Botón cerrar */}
         <button
           onClick={onClose}
-          disabled={loading}
+          disabled={eliminando}
           className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <X className="w-5 h-5" />
@@ -52,7 +52,7 @@ export default function ModalEliminarLogo({
         <p className="text-gray-600 text-center mb-6">
           Estás a punto de eliminar{' '}
           <span className="font-bold text-red-600">
-            {nombreLogo}
+            {logoNombre}
           </span>
           . Esta acción no se puede deshacer.
         </p>
@@ -78,10 +78,10 @@ export default function ModalEliminarLogo({
         <div className="flex flex-col gap-3">
           <button
             onClick={onConfirm}
-            disabled={loading}
+            disabled={eliminando}
             className="w-full px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded-xl hover:from-red-700 hover:to-rose-700 font-semibold shadow-lg transition-all flex items-center justify-center gap-2 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
-            {loading ? (
+            {eliminando ? (
               <>
                 <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
                 Eliminando...
@@ -96,7 +96,7 @@ export default function ModalEliminarLogo({
           
           <button
             onClick={onClose}
-            disabled={loading}
+            disabled={eliminando}
             className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancelar
