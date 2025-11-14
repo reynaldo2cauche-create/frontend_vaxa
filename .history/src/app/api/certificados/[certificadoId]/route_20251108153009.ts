@@ -207,7 +207,7 @@ export async function PUT(
     };
 
     // Generar código QR
-    const urlValidacion = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/validar/${certificado.codigo}`;
+    const urlValidacion = `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/validar/?codigo=${certificado.codigo}`;
     const qrDataURL = await QRCode.toDataURL(urlValidacion, {
       width: 200,
       margin: 1,
