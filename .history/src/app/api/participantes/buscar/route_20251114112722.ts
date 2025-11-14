@@ -102,7 +102,7 @@ export async function GET(request: NextRequest) {
         return {
           id: participante.id,
           dni: participante.numero_documento,
-          nombre: [participante.nombres].filter(Boolean).join(' '),
+          nombre: [participante.nombres, participante.apellidos].filter(Boolean).join(' '),
           email: participante.correo_electronico,
           telefono: participante.telefono || '',
           empresa_id: participante.empresa_id,
