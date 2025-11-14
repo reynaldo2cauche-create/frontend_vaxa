@@ -27,6 +27,7 @@ interface Participante {
   nombres: string;
   apellidos: string;
   nombre_completo: string;
+  tiene_override: boolean; // 🆕 Indica si tiene nombre personalizado
   tipo_documento: string;
   numero_documento: string;
   correo_electronico: string | null;
@@ -570,7 +571,7 @@ export default function ParticipantesLotePage() {
                               <p className="text-sm font-semibold text-gray-900">
                                 {participante.nombre_completo}
                               </p>
-                              {participante.datos_adicionales['_nombre_override'] && (
+                              {participante.tiene_override && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200">
                                   Personalizado
                                 </span>

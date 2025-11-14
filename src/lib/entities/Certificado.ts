@@ -49,6 +49,10 @@ export class Certificado {
   @Column({ type: 'varchar', length: 500 })
   archivo_url: string;
 
+  // 🆕 Nombre personalizado para el certificado (sobrescribe el nombre del participante)
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  nombre_override: string | null;
+
   @CreateDateColumn()
   fecha_emision: Date;
 

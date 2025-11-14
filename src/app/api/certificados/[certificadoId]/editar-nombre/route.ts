@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AppDataSource } from '@/lib/db';
-import { DatoCertificado } from '@/lib/entities/DatoCertificado';
 import { Certificado } from '@/lib/entities/Certificado';
 
 export async function PUT(
@@ -43,31 +42,13 @@ export async function PUT(
       );
     }
 
-    const datoCertificadoRepo = AppDataSource.getRepository(DatoCertificado);
+    // 🆕 Guardar en la columna nombre_override de la tabla certificados
+    certificado.nombre_override = nuevoNombre.trim();
+    await certificadoRepo.save(certificado);
 
-    // Buscar si ya existe un _nombre_override
-    let datoNombreOverride = await datoCertificadoRepo.findOne({
-      where: {
-        certificado_id: certificadoId,
-        campo: '_nombre_override'
-      }
-    });
-
-    if (datoNombreOverride) {
-      // Actualizar el existente
-      datoNombreOverride.valor = nuevoNombre.trim();
-      await datoCertificadoRepo.save(datoNombreOverride);
-      console.log(`✏️ Nombre actualizado para certificado ${certificado.codigo}: "${nuevoNombre.trim()}"`);
-    } else {
-      // Crear nuevo _nombre_override
-      datoNombreOverride = datoCertificadoRepo.create({
-        certificado_id: certificadoId,
-        campo: '_nombre_override',
-        valor: nuevoNombre.trim()
-      });
-      await datoCertificadoRepo.save(datoNombreOverride);
-      console.log(`📝 Nombre personalizado creado para certificado ${certificado.codigo}: "${nuevoNombre.trim()}"`);
-    }
+    console.log(`✏️ Nombre personalizado guardado para certificado ${certificado.codigo}: "${nuevoNombre.trim()}"`);
+    console.log(`   Antes: ${certificado.nombre_override || 'Sin nombre personalizado'}`);
+    console.log(`   Ahora: ${nuevoNombre.trim()}`);
 
     return NextResponse.json({
       success: true,

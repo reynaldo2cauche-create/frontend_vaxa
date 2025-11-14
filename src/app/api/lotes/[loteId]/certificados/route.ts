@@ -74,10 +74,9 @@ export async function GET(
         // Obtener término del participante si existe en datos adicionales
         const termino = datosMap['termino'] || datosMap['tratamiento'] || '';
 
-        // 🆕 PRIORIDAD: _nombre_override > nombre del participante
-        const nombreOverride = datosMap['_nombre_override'];
-        const nombreCompleto = nombreOverride && nombreOverride.trim()
-          ? nombreOverride.trim()
+        // 🆕 PRIORIDAD: cert.nombre_override > nombre del participante
+        const nombreCompleto = cert.nombre_override && cert.nombre_override.trim()
+          ? cert.nombre_override.trim()
           : `${cert.participante?.nombres || ''} ${cert.participante?.apellidos || ''}`.trim();
 
         return {
@@ -87,7 +86,8 @@ export async function GET(
           termino: termino,
           nombres: cert.participante?.nombres || '',
           apellidos: cert.participante?.apellidos || '',
-          nombre_completo: nombreCompleto, // 🔑 Ahora usa _nombre_override con prioridad
+          nombre_completo: nombreCompleto, // 🔑 Usa cert.nombre_override con prioridad
+          tiene_override: !!cert.nombre_override, // 🆕 Indica si tiene nombre personalizado
           tipo_documento: cert.participante?.tipo_documento || '',
           numero_documento: cert.participante?.numero_documento || '',
           correo_electronico: cert.participante?.correo_electronico || null,
