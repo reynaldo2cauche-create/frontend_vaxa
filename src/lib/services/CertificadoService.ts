@@ -511,6 +511,9 @@ static async generarCertificado(
         );
 
         // 4. Guardar en base de datos con referencias normalizadas
+        // 🆕 nombre_override se inicializa con el nombre del participante
+        const nombreCompleto = datosMapeados['nombre'] || '';
+
         const certificado = certificadoRepo.create({
           codigo: certGenerado.codigo,
           empresa_id: empresaId,
@@ -520,11 +523,14 @@ static async generarCertificado(
           horas_curso: datosMapeados['horas'] ? parseInt(datosMapeados['horas']) : null,
           lote_id: loteId,
           archivo_url: certGenerado.rutaArchivo,
+          nombre_override: nombreCompleto.trim(), // 🔑 Inicializar con nombre del participante
           estado: EstadoCertificado.ACTIVO,
           fecha_emision: new Date()
         });
 
         await certificadoRepo.save(certificado);
+
+        console.log(`   📝 Nombre inicial del certificado: "${nombreCompleto.trim()}"`);
 
         console.log(`   💾 Certificado guardado - ID: ${certificado.id}, Participante: ${certificado.participante_id}, Curso: ${certificado.curso_id}`);
 
@@ -546,25 +552,15 @@ static async generarCertificado(
         const datosEntidades: DatoCertificado[] = [];
 
         for (const [campo, valor] of Object.entries(datosMapeados)) {
-          const dato = datoCertificadoRepo.create({
-            certificado_id: certificado.id,
-            campo,
-            valor
-          });
-          datosEntidades.push(dato);
-        }
-
-        // 🆕 GUARDAR EL NOMBRE ORIGINAL DEL EXCEL como _nombre_override
-        const nombreDelExcel = datosMapeados['nombre'];
-        if (nombreDelExcel && nombreDelExcel.trim()) {
-          datosEntidades.push(
-            datoCertificadoRepo.create({
+          // 🚫 NO guardar 'nombre' en dato_certificado, ya está en nombre_override
+          if (campo !== 'nombre') {
+            const dato = datoCertificadoRepo.create({
               certificado_id: certificado.id,
-              campo: '_nombre_override',
-              valor: nombreDelExcel.trim()
-            })
-          );
-          console.log(`   📝 Nombre del Excel guardado: "${nombreDelExcel.trim()}"`);
+              campo,
+              valor
+            });
+            datosEntidades.push(dato);
+          }
         }
 
         await datoCertificadoRepo.save(datosEntidades);
@@ -902,11 +898,12 @@ static async generarCertificado(
       datosMapeados[dato.campo] = dato.valor;
     });
 
-    // 🆕 PRIORIZAR _nombre_override si existe
-    const nombreOverride = datos.find(d => d.campo === '_nombre_override');
-    if (nombreOverride && nombreOverride.valor.trim()) {
-      datosMapeados['nombre'] = nombreOverride.valor.trim();
-      console.log(`   ✏️ Usando nombre personalizado: "${nombreOverride.valor.trim()}"`);
+    // 🆕 USAR nombre_override de la tabla certificados
+    if (certificado.nombre_override && certificado.nombre_override.trim()) {
+      datosMapeados['nombre'] = certificado.nombre_override.trim();
+      console.log(`   ✏️ Usando nombre del certificado: "${certificado.nombre_override.trim()}"`);
+    } else {
+      console.log(`   ⚠️ Sin nombre_override, usando nombre de datos: "${datosMapeados['nombre'] || 'Sin nombre'}"`);
     }
 
     // 4. Obtener firmas del certificado
