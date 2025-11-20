@@ -1,0 +1,1 @@
+{"version":1,"resource":"file:///c%3A/Users/Lucero/Desktop/frontend_vaxa/src/app/api/participantes/buscar/route.ts","entries":[{"id":"JcI8.ts","timestamp":1763050583600},{"id":"sFhv.ts","source":"undoRedo.source","timestamp":1763050603813}]}

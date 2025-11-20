@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Colores dinámicos de empresa (se sobrescriben con JS) */
+    --color-primario: #3b82f6;
+    --color-secundario: #8b5cf6;
+    --color-primario-rgb: 59, 130, 246;
+    --color-secundario-rgb: 139, 92, 246;
+  }
+}
+
+@layer utilities {
+  /* Gradientes personalizados */
+  .bg-gradient-brand {
+    background: linear-gradient(135deg, var(--color-primario), var(--color-secundario));
+  }
+
+  .bg-gradient-brand-soft {
+    background: linear-gradient(135deg, rgba(var(--color-primario-rgb), 0.1), rgba(var(--color-secundario-rgb), 0.1));
+  }
+
+  .border-brand {
+    border-color: var(--color-primario);
+  }
+
+  .text-brand {
+    color: var(--color-primario);
+  }
+
+  .hover-brand:hover {
+    background-color: rgba(var(--color-primario-rgb), 0.1);
+    color: var(--color-primario);
+  }
+}
